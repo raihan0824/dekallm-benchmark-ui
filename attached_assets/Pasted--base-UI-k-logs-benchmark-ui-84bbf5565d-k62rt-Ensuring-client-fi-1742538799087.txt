@@ -1,0 +1,62 @@
+(base) ➜  UI k logs benchmark-ui-84bbf5565d-k62rt                                
+Ensuring client files are in all required locations...
+Found valid source directory: /app/client/dist
+Error copying to /app/dist/client: Error: ENOENT: no such file or directory, mkdir '/app/dist/client'
+    at Object.mkdirSync (node:fs:1371:26)
+    at ensureClientFiles (/app/dist/prodServer.cjs:348:16)
+    at Object.<anonymous> (/app/dist/prodServer.cjs:394:1)
+    at Module._compile (node:internal/modules/cjs/loader:1469:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1548:10)
+    at Module.load (node:internal/modules/cjs/loader:1288:32)
+    at Module._load (node:internal/modules/cjs/loader:1104:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+    at node:internal/main/run_main_module:28:49 {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'mkdir',
+  path: '/app/dist/client'
+}
+Error copying to /app/dist/public: Error: EACCES: permission denied, copyfile '/app/client/dist/index.html' -> '/app/dist/public/index.html'
+    at Object.copyFileSync (node:fs:3034:11)
+    at ensureClientFiles (/app/dist/prodServer.cjs:357:16)
+    at Object.<anonymous> (/app/dist/prodServer.cjs:394:1)
+    at Module._compile (node:internal/modules/cjs/loader:1469:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1548:10)
+    at Module.load (node:internal/modules/cjs/loader:1288:32)
+    at Module._load (node:internal/modules/cjs/loader:1104:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:173:12)
+    at node:internal/main/run_main_module:28:49 {
+  errno: -13,
+  code: 'EACCES',
+  syscall: 'copyfile',
+  path: '/app/client/dist/index.html',
+  dest: '/app/dist/public/index.html'
+}
+Current directory: /app/dist
+Directory structure at app root: [
+  'client',
+  'dist',
+  'node_modules',
+  'package-lock.json',
+  'package.json',
+  'vite.config.js'
+]
+Contents of dist directory: [
+  'client',
+  'index.js',
+  'prodServer.cjs',
+  'public',
+  'vite-config-shim.js'
+]
+Contents of dist/public directory: [ 'assets', 'images', 'index.html' ]
+dist/public/index.html exists: true
+dist/client directory does not exist
+dist/index.html exists: false
+Contents of client/dist directory: [ 'assets', 'images', 'index.html' ]
+client/dist/index.html exists: true
+All paths being checked for index.html:
+- /app/dist/public/index.html exists: true
+- /app/client/dist/index.html exists: true
+- /app/dist/client/index.html exists: false
+- /app/dist/index.html exists: false
+Production server running on port 5000

@@ -1,0 +1,72 @@
+FROM node:20-alpine as builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Fix CSS border issue and set up environment
+RUN sed -i 's/@apply border-border;//g' /app/client/src/index.css
+RUN echo "NODE_ENV=production" > .env
+RUN echo "BENCHMARK_API_URL=http://localhost" >> .env
+
+# Build the application
+RUN npm run build
+
+# Create a clean production structure
+RUN mkdir -p /app/production/client/dist
+
+# Copy server files
+RUN cp -r /app/dist /app/production/
+
+# Copy client files from possible locations
+RUN if [ -d "/app/client/dist" ]; then \
+      cp -r /app/client/dist/* /app/production/client/dist/; \
+    elif [ -d "/app/dist/public" ]; then \
+      cp -r /app/dist/public/* /app/production/client/dist/; \
+      mkdir -p /app/production/dist/public; \
+      cp -r /app/dist/public/* /app/production/dist/public/; \
+    elif [ -d "/app/dist/client" ]; then \
+      cp -r /app/dist/client/* /app/production/client/dist/; \
+    fi
+
+# Create symbolic link for compatibility 
+RUN mkdir -p /app/production/dist
+RUN ln -sf /app/production/client/dist /app/production/dist/client
+RUN cp package*.json /app/production/
+
+# Production stage
+FROM node:20-alpine as production
+
+# Set environment to production
+ENV NODE_ENV=production
+ENV BENCHMARK_API_URL=http://localhost
+ENV IN_DOCKER=true
+
+# Set working directory
+WORKDIR /app
+
+# Copy the prepared production build
+COPY --from=builder /app/production /app
+
+# Install production dependencies only
+RUN npm ci --only=production
+
+# Create and copy Vite shims for production mode
+RUN mkdir -p /app/node_modules/vite /app/node_modules/@vitejs/plugin-react
+COPY server/shimVite.js /app/node_modules/vite/index.js
+COPY server/shimVitePluginReact.js /app/node_modules/@vitejs/plugin-react/index.js
+COPY server/shimViteConfig.js /app/vite.config.js
+RUN echo 'import viteConfig from "../vite.config";' > /app/dist/vite-config-shim.js
+
+# Copy production server file
+COPY server/prodServer.cjs /app/dist/prodServer.cjs
+
+# Expose port and start server
+EXPOSE 5000
+CMD ["node", "dist/prodServer.cjs"]
