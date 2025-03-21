@@ -33,9 +33,12 @@ COPY package*.json ./
 # Install only production dependencies
 RUN npm ci --omit=dev
 
+# Create necessary directory structure
+RUN mkdir -p ./dist
+
 # Copy built application from builder stage
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/client/dist ./client/dist
+COPY --from=builder /app/dist/index.js ./dist/index.js
+COPY --from=builder /app/dist/public ./dist/public
 
 # Expose the application port
 EXPOSE 5000

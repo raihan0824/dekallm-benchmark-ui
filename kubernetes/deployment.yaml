@@ -42,3 +42,8 @@ spec:
         env:
         - name: NODE_ENV
           value: "production"
+        - name: BENCHMARK_API_URL
+          valueFrom:
+            secretKeyRef:
+              name: dekallm-benchmark-ui-secrets
+              key: BENCHMARK_API_URL
