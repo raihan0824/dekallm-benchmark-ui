@@ -21,12 +21,42 @@ RUN npm run build
 RUN mkdir -p /app/production
 # Copy server dist files
 RUN cp -r /app/dist /app/production/
+
 # Ensure client files are in the right place
+# Vite output should be in dist/client, not client/dist
 RUN mkdir -p /app/production/client/dist
-RUN cp -r /app/client/dist/* /app/production/client/dist/
+
+# Check where the client files actually are after the build
+RUN ls -la /app/dist
+RUN ls -la /app || echo "No /app directory" 
+RUN find /app -name "index.html" || echo "No index.html found"
+
+# Copy client files - according to vite.config.ts, they should be in dist/public
+RUN if [ -d "/app/dist/public" ]; then \
+      mkdir -p /app/production/client/dist; \
+      cp -r /app/dist/public/* /app/production/client/dist/; \
+      echo "Copied from /app/dist/public to /app/production/client/dist"; \
+      # Also create a copy in the original location for backward compatibility
+      mkdir -p /app/production/dist/public; \
+      cp -r /app/dist/public/* /app/production/dist/public/; \
+    elif [ -d "/app/dist/client" ]; then \
+      mkdir -p /app/production/client/dist; \
+      cp -r /app/dist/client/* /app/production/client/dist/; \
+      echo "Copied from /app/dist/client to /app/production/client/dist"; \
+    elif [ -d "/app/dist/assets" ]; then \
+      mkdir -p /app/production/client/dist/assets; \
+      cp -r /app/dist/assets /app/production/client/dist/; \
+      cp /app/dist/index.html /app/production/client/dist/ || echo "No index.html in /app/dist"; \
+      echo "Copied assets and index.html to /app/production/client/dist"; \
+    else \
+      echo "Client files not found in expected locations"; \
+      mkdir -p /app/production/client/dist; \
+      echo "<html><body>Placeholder - client files not found during build</body></html>" > /app/production/client/dist/index.html; \
+    fi
+
 # Create a linked directory for better compatibility
 RUN mkdir -p /app/production/dist
-RUN ln -s /app/production/client/dist /app/production/dist/
+RUN ln -sf /app/production/client/dist /app/production/dist/client
 RUN cp package*.json /app/production/
 
 # Production stage

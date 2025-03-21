@@ -230,31 +230,77 @@ app.get("/api/benchmarks/:id", async (req, res) => {
   }
 });
 
+// Serve static files from multiple potential locations
+// Try in the order of most likely locations first
+app.use(express.static(path.join(__dirname, '../dist/public'))); // From vite.config.ts
+app.use(express.static(path.join(__dirname, '../client/dist'))); // Common structure
+app.use(express.static(path.join(__dirname, '../dist/client'))); // Alternative location
+app.use(express.static(path.join(__dirname, '../dist'))); // Root dist folder
+
 // Add catch-all route last (after API routes are registered)
 // All other routes serve the main index.html file
 app.get('*', (req, res) => {
-  const indexPath = path.join(__dirname, '../dist/index.html');
+  // Try multiple potential locations for index.html
+  const possiblePaths = [
+    path.join(__dirname, '../dist/public/index.html'),
+    path.join(__dirname, '../client/dist/index.html'),
+    path.join(__dirname, '../dist/client/index.html'),
+    path.join(__dirname, '../dist/index.html')
+  ];
   
-  // Check if the file exists before sending it
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    console.error(`Error: index.html not found at ${indexPath}`);
-    // Log directory contents for debugging
-    try {
-      const distPath = path.join(__dirname, '../dist');
-      if (fs.existsSync(distPath)) {
-        console.log('Contents of dist directory:', fs.readdirSync(distPath));
-      } else {
-        console.log('dist directory does not exist at', distPath);
-        console.log('Current directory structure:', fs.readdirSync(path.join(__dirname, '..')));
+  // Try each path until we find one that exists
+  for (const indexPath of possiblePaths) {
+    if (fs.existsSync(indexPath)) {
+      console.log(`Found index.html at ${indexPath}`);
+      return res.sendFile(indexPath);
+    }
+  }
+  
+  // If we get here, we didn't find index.html
+  console.error(`Error: index.html not found in any of the expected locations`);
+  
+  // Log directory contents for debugging
+  try {
+    console.log('Checking directory structure...');
+    
+    const rootDir = path.join(__dirname, '..');
+    console.log(`Contents of ${rootDir}:`, fs.readdirSync(rootDir));
+    
+    const distPath = path.join(__dirname, '../dist');
+    if (fs.existsSync(distPath)) {
+      console.log(`Contents of ${distPath}:`, fs.readdirSync(distPath));
+      
+      const distClientPath = path.join(distPath, 'client');
+      if (fs.existsSync(distClientPath)) {
+        console.log(`Contents of ${distClientPath}:`, fs.readdirSync(distClientPath));
       }
-    } catch (error) {
-      console.error('Error listing directory contents:', error);
     }
     
-    res.status(404).send('Application files not found. Please contact support.');
+    const clientDistPath = path.join(__dirname, '../client/dist');
+    if (fs.existsSync(clientDistPath)) {
+      console.log(`Contents of ${clientDistPath}:`, fs.readdirSync(clientDistPath));
+    }
+    
+    // Find all index.html files in the directory structure
+    console.log('Searching for index.html files...');
+    const { exec } = require('child_process');
+    exec('find /app -name "index.html"', (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error finding index.html files: ${error.message}`);
+        return;
+      }
+      if (stderr) {
+        console.error(`Error stderr: ${stderr}`);
+        return;
+      }
+      console.log(`Found index.html files:\n${stdout}`);
+    });
+    
+  } catch (error) {
+    console.error('Error listing directory contents:', error);
   }
+  
+  res.status(404).send('Application files not found. Please contact support.');
 });
 
 // Create HTTP server and start
@@ -266,17 +312,55 @@ try {
   console.log('Current directory:', __dirname);
   console.log('Directory structure at app root:', fs.readdirSync(path.join(__dirname, '..')));
   
-  // Check if dist directory exists and log its contents
+  // Check dist directory
   const distPath = path.join(__dirname, '../dist');
   if (fs.existsSync(distPath)) {
     console.log('Contents of dist directory:', fs.readdirSync(distPath));
     
-    // Check if index.html exists
+    // Check if public directory exists (from vite.config.ts)
+    const publicPath = path.join(distPath, 'public');
+    if (fs.existsSync(publicPath)) {
+      console.log('Contents of dist/public directory:', fs.readdirSync(publicPath));
+      console.log('dist/public/index.html exists:', fs.existsSync(path.join(publicPath, 'index.html')));
+    } else {
+      console.log('dist/public directory does not exist');
+    }
+    
+    // Check if client directory exists
+    const clientPath = path.join(distPath, 'client');
+    if (fs.existsSync(clientPath)) {
+      console.log('Contents of dist/client directory:', fs.readdirSync(clientPath));
+      console.log('dist/client/index.html exists:', fs.existsSync(path.join(clientPath, 'index.html')));
+    } else {
+      console.log('dist/client directory does not exist');
+    }
+    
+    // Check if index.html exists in dist root
     const indexPath = path.join(distPath, 'index.html');
-    console.log('index.html exists:', fs.existsSync(indexPath));
+    console.log('dist/index.html exists:', fs.existsSync(indexPath));
   } else {
     console.log('dist directory does not exist');
   }
+  
+  // Check client/dist directory
+  const clientDistPath = path.join(__dirname, '../client/dist');
+  if (fs.existsSync(clientDistPath)) {
+    console.log('Contents of client/dist directory:', fs.readdirSync(clientDistPath));
+    console.log('client/dist/index.html exists:', fs.existsSync(path.join(clientDistPath, 'index.html')));
+  } else {
+    console.log('client/dist directory does not exist');
+  }
+  
+  // Log all paths we're checking for index.html
+  console.log('All paths being checked for index.html:');
+  [
+    path.join(__dirname, '../dist/public/index.html'),
+    path.join(__dirname, '../client/dist/index.html'),
+    path.join(__dirname, '../dist/client/index.html'),
+    path.join(__dirname, '../dist/index.html')
+  ].forEach(p => {
+    console.log(`- ${p} exists: ${fs.existsSync(p)}`);
+  });
 } catch (error) {
   console.error('Error checking directory structure:', error);
 }
