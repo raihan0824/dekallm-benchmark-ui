@@ -14,9 +14,9 @@ export function TestConfigForm({ onSubmit, isLoading }: TestConfigFormProps) {
     resolver: zodResolver(benchmarkConfigSchema),
     defaultValues: {
       url: "",
-      user: 100,
-      spawnrate: 100,
-      duration: 60,
+      user: 50,      // Reduced default user count for faster tests
+      spawnrate: 50,  // Reduced default spawn rate
+      duration: 5,    // Reduced default duration to avoid timeouts
       model: ""
     }
   });
@@ -132,6 +132,10 @@ export function TestConfigForm({ onSubmit, isLoading }: TestConfigFormProps) {
               )}
             />
 
+            <div className="text-xs text-amber-600 mb-3 italic">
+              Note: Use shorter test durations (5-10 seconds) for faster results and to avoid timeouts.
+            </div>
+            
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>

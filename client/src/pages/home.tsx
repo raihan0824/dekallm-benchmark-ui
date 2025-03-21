@@ -3,6 +3,7 @@ import { AppFooter } from "@/components/app-footer";
 import { TestConfigForm } from "@/components/test-config-form";
 import { TestResults } from "@/components/test-results";
 import { TestHistory } from "@/components/test-history";
+import { ApiStatusBanner } from "@/components/api-status-banner";
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -136,6 +137,9 @@ export default function Home() {
       <AppHeader />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
+        {/* API Status Banner */}
+        <ApiStatusBanner />
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
             <TestConfigForm

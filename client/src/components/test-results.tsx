@@ -49,14 +49,41 @@ export function TestResults({ results, isLoading, error }: TestResultsProps) {
 
   // Error state
   if (error) {
+    // Determine if this is a connection error
+    const isConnectionError = error.includes('ECONNREFUSED') || 
+                             error.includes('timeout') || 
+                             error.includes('Cannot connect');
+    
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Test Failed</AlertTitle>
-        <AlertDescription>
-          {error}
-        </AlertDescription>
-      </Alert>
+      <Card className="p-6 border-destructive">
+        <div className="flex items-start space-x-4">
+          <AlertCircle className="h-8 w-8 text-destructive flex-shrink-0 mt-1" />
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-destructive mb-2">Test Failed</h3>
+            <p className="text-sm text-gray-700 mb-4">{error}</p>
+            
+            {isConnectionError && (
+              <div className="bg-amber-50 p-4 rounded-md mt-2">
+                <h4 className="font-medium text-amber-800 mb-1">Connection Issue Detected</h4>
+                <ul className="list-disc list-inside text-sm text-amber-700 space-y-1">
+                  <li>The benchmark API server appears to be unavailable</li>
+                  <li>This is likely a temporary issue with the remote server</li>
+                  <li>Please try again later or contact your administrator</li>
+                </ul>
+              </div>
+            )}
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-4"
+              onClick={() => window.location.reload()}
+            >
+              Refresh Page
+            </Button>
+          </div>
+        </div>
+      </Card>
     );
   }
 
