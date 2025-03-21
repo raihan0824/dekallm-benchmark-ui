@@ -6,6 +6,7 @@ import { TestResultsProps } from "@/lib/types";
 import { MetricsDisplay } from "./metrics-display";
 import { ChartCard } from "./ui/chart-card";
 import { downloadJson, downloadCsv, getMetricChartData, getMetricColors } from "@/lib/utils";
+import { BenchmarkResult } from "@shared/schema";
 
 export function TestResults({ results, isLoading, error }: TestResultsProps) {
   const handleExportJson = () => {
@@ -59,16 +60,30 @@ export function TestResults({ results, isLoading, error }: TestResultsProps) {
     );
   }
 
+  // Safety check - if we somehow got here without results
+  if (!results) {
+    return (
+      <Card className="flex flex-col items-center justify-center py-16">
+        <AlertCircle className="h-16 w-16 text-yellow-400" />
+        <h3 className="mt-4 text-lg font-medium text-gray-900">No Results Available</h3>
+        <p className="mt-1 text-sm text-gray-500">Please try running the test again</p>
+      </Card>
+    );
+  }
+
+  // We now know results is not null
+  const benchmarkResults: BenchmarkResult = results;
+
   // Results state
   return (
     <div className="space-y-8">
       {/* Display metrics */}
-      <MetricsDisplay results={results} />
+      <MetricsDisplay results={benchmarkResults} />
 
       {/* Chart displays */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {['time_to_first_token', 'end_to_end_latency', 'inter_token_latency', 'token_speed'].map((metric) => {
-          const { data, labels } = getMetricChartData(results, metric as keyof typeof results.metrics);
+          const { data, labels } = getMetricChartData(benchmarkResults, metric as keyof typeof benchmarkResults.metrics);
           const { color, borderColor } = getMetricColors(metric);
           const metricTitle = metric.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
           
@@ -91,8 +106,8 @@ export function TestResults({ results, isLoading, error }: TestResultsProps) {
         title="Throughput (tokens/sec)"
         chartId="throughput-chart"
         data={[
-          results.metrics.throughput.input_tokens_per_second,
-          results.metrics.throughput.output_tokens_per_second
+          benchmarkResults.metrics.throughput.input_tokens_per_second,
+          benchmarkResults.metrics.throughput.output_tokens_per_second
         ]}
         labels={['Input Tokens/s', 'Output Tokens/s']}
         color="hsl(var(--chart-5))"
