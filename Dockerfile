@@ -57,12 +57,11 @@ ENV IN_DOCKER=true
 RUN echo 'import viteConfig from "../vite.config";' > /app/dist/vite-config-shim.js
 COPY server/shimViteConfig.js /app/vite.config.js
 
-# Copy our production server and ES module shim to the dist folder
-COPY server/prodServer.mjs /app/dist/prodServer.mjs
-COPY server/esModuleShim.js /app/dist/esModuleShim.js
+# Copy our production server file (CommonJS version)
+COPY server/prodServer.cjs /app/dist/prodServer.cjs
 
 # Expose the application port
 EXPOSE 5000
 
-# Start the application using our production server instead
-CMD ["node", "dist/prodServer.mjs"]
+# Start the application using our production server
+CMD ["node", "dist/prodServer.cjs"]

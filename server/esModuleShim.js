@@ -62,8 +62,8 @@ class MemStorage {
   }
 }
 
-// Schema definitions for validation
-const z = await import('zod');
+// Import Zod directly to avoid dynamic import issues
+import * as z from 'zod';
 
 const metricStatsSchema = z.object({
   mean: z.number(),
