@@ -57,6 +57,9 @@ ENV IN_DOCKER=true
 RUN echo 'import viteConfig from "../vite.config";' > /app/dist/vite-config-shim.js
 COPY server/shimViteConfig.js /app/vite.config.js
 
+# Copy our production server directly to the dist folder
+COPY server/prodServer.js /app/dist/prodServer.js
+
 # Expose the application port
 EXPOSE 5000
 
