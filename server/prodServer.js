@@ -1,10 +1,12 @@
 // Simple production server
-const express = require('express');
-const path = require('path');
-const fs = require('fs');
+import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { registerRoutes } from './routes.js';
 
-// Import the routes from the built distribution
-const { registerRoutes } = require('./routes');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Simplify error handling for production
 process.on('uncaughtException', (err) => {
