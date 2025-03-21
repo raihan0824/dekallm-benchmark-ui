@@ -73,19 +73,15 @@ const storage = new MemStorage();
 const { z } = require('zod');
 
 const metricStatsSchema = z.object({
-  mean: z.number(),
+  average: z.number(),
+  maximum: z.number(),
+  minimum: z.number(),
   median: z.number(),
-  p90: z.number(),
-  p95: z.number(),
-  p99: z.number(),
-  min: z.number(),
-  max: z.number()
 });
 
 const throughputSchema = z.object({
-  total_time: z.number(),
-  total_tokens: z.number(),
-  tokens_per_second: z.number()
+  input_tokens_per_second: z.number(),
+  output_tokens_per_second: z.number(),
 });
 
 const benchmarkConfigSchema = z.object({
@@ -98,23 +94,21 @@ const benchmarkConfigSchema = z.object({
 
 const benchmarkResultSchema = z.object({
   status: z.string(),
-  timestamp: z.string(),
-  configuration: z.object({
-    url: z.string(),
-    user: z.number(),
-    spawnrate: z.number(),
-    duration: z.number(),
-    model: z.string().nullable().optional(),
-    tokenizer: z.string().nullable().optional(),
-  }),
   metrics: z.object({
     time_to_first_token: metricStatsSchema,
     end_to_end_latency: metricStatsSchema,
     inter_token_latency: metricStatsSchema,
-    token_speed: metricStatsSchema
+    token_speed: metricStatsSchema,
+    throughput: throughputSchema,
   }),
-  throughput: throughputSchema,
-  raw_data: z.record(z.any()).optional()
+  configuration: z.object({
+    user: z.number(),
+    spawnrate: z.number(),
+    model: z.string(),
+    tokenizer: z.string(),
+    url: z.string(),
+    duration: z.number(),
+  }),
 });
 
 const app = express();
