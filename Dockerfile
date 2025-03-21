@@ -7,8 +7,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# Copy source code
+# Copy source code (excluding .env files)
 COPY . .
+
+# Create a default .env file for the build process
+RUN echo "NODE_ENV=production" > .env
 
 # Build the application
 RUN npm run build
@@ -18,6 +21,8 @@ FROM node:20-alpine as production
 
 # Set environment to production
 ENV NODE_ENV=production
+# Default benchmark API URL, to be overridden at deploy time
+ENV BENCHMARK_API_URL=http://localhost
 
 # Set working directory
 WORKDIR /app

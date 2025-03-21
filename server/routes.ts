@@ -18,7 +18,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Encode URL parameters
       const url = encodeURIComponent(benchmarkConfig.url);
-      const benchmarkUrl = `http://103.67.43.205/run-load-test?user=${benchmarkConfig.user}&spawnrate=${benchmarkConfig.spawnrate}&url=${url}&duration=${benchmarkConfig.duration}`;
+      const benchmarkApiUrl = process.env.BENCHMARK_API_URL || 'http://localhost';
+      const benchmarkUrl = `${benchmarkApiUrl}/run-load-test?user=${benchmarkConfig.user}&spawnrate=${benchmarkConfig.spawnrate}&url=${url}&duration=${benchmarkConfig.duration}`;
       
       // Add model parameter if provided
       const modelParam = benchmarkConfig.model ? `&model=${encodeURIComponent(benchmarkConfig.model)}` : '';
