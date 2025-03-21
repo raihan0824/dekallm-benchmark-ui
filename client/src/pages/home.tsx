@@ -22,25 +22,27 @@ export default function Home() {
 
   // Fetch test history
   const { 
-    data: historyData = [],
+    data: historyData,
     isLoading: historyLoading,
     error: historyError
-  } = useQuery<BenchmarkTest[]>({
+  } = useQuery({
     queryKey: ['/api/benchmarks'],
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Format history data
-  const history: TestHistoryItem[] = historyData.map((item: any) => ({
-    id: item.id,
-    url: item.url,
-    user: item.user,
-    spawnrate: item.spawnrate,
-    duration: item.duration,
-    model: item.model,
-    status: item.status,
-    createdAt: item.createdAt,
-  }));
+  const history: TestHistoryItem[] = Array.isArray(historyData) 
+    ? historyData.map((item: any) => ({
+        id: item.id,
+        url: item.url,
+        user: item.user,
+        spawnrate: item.spawnrate,
+        duration: item.duration,
+        model: item.model,
+        status: item.status,
+        createdAt: item.createdAt,
+      }))
+    : [];
 
   // Mutation for running a benchmark test
   const runBenchmarkMutation = useMutation({
