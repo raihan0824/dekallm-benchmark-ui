@@ -19,21 +19,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Encode URL parameters
       const url = encodeURIComponent(benchmarkConfig.url);
       const benchmarkApiUrl = process.env.BENCHMARK_API_URL || 'http://localhost';
+      console.log(`Using Benchmark API URL: ${benchmarkApiUrl}`);
+      
       const benchmarkUrl = `${benchmarkApiUrl}/run-load-test?user=${benchmarkConfig.user}&spawnrate=${benchmarkConfig.spawnrate}&url=${url}&duration=${benchmarkConfig.duration}`;
       
       // Add model parameter if provided
       const modelParam = benchmarkConfig.model ? `&model=${encodeURIComponent(benchmarkConfig.model)}` : '';
+      const fullUrl = benchmarkUrl + modelParam;
+      
+      console.log(`Making request to: ${fullUrl}`);
       
       try {
         // Call the benchmark API
-        const response = await axios.post(benchmarkUrl + modelParam, '', {
+        console.log("Sending request to benchmark API...");
+        // Decrease timeout for better user experience
+        const response = await axios.post(fullUrl, '', {
           headers: {
             'accept': 'application/json'
-          }
+          },
+          timeout: 15000, // 15 second timeout - if API is slow, fail faster
         });
+        
+        console.log("Received response from benchmark API");
+        console.log("Response status:", response.status);
+        console.log("Response data keys:", Object.keys(response.data));
+        
+        if (!response.data) {
+          console.error("Response data is empty");
+          return res.status(500).json({
+            message: "Benchmark API returned empty response"
+          });
+        }
         
         // Validate response data
         const result = benchmarkResultSchema.parse(response.data);
+        console.log("Validation passed for benchmark result");
         
         // Store the benchmark test in the database
         const test = await storage.createBenchmarkTest({
@@ -47,15 +67,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
           results: result
         });
         
+        console.log("Benchmark test stored with ID:", test.id);
         return res.status(200).json(result);
       } catch (error) {
+        console.error("Error calling benchmark API:", error);
+        
         if (axios.isAxiosError(error)) {
           // Handle API request errors
           const statusCode = error.response?.status || 500;
-          const message = error.response?.data?.message || error.message || 'An error occurred during the benchmark test';
+          let message = error.response?.data?.message || error.message || 'An error occurred during the benchmark test';
+          console.error(`Axios error (${statusCode}):`, message);
+          
+          if (error.response?.data) {
+            console.log("Error response data:", error.response.data);
+          }
+          
+          let userMessage = '';
+          
+          // Provide helpful error messages based on common errors
+          if (error.code === 'ECONNREFUSED') {
+            userMessage = "Cannot connect to the benchmark API server. The server may be down or the API URL might be incorrect.";
+          } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+            userMessage = "The benchmark API request timed out. The load test might be taking too long to complete.";
+          } else if (error.response?.status === 401) {
+            userMessage = "Authentication failed. API access requires valid credentials.";
+          } else if (error.response?.status === 400) {
+            userMessage = "Bad request. Please check the test parameters: " + message;
+          } else {
+            userMessage = `Benchmark API Error: ${message}`;
+          }
           
           return res.status(statusCode).json({
-            message: `Benchmark API Error: ${message}`
+            message: userMessage,
+            error: error.code,
+            original_message: message
           });
         }
         
