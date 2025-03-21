@@ -1,0 +1,41 @@
+# Node modules and dependencies
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Git & version control
+.git
+.gitignore
+.github
+!.dockerignore
+
+# Test files
+__tests__
+test
+tests
+*.test.js
+*.spec.js
+
+# Build files
+build
+coverage
+# We need the dist folder for the multi-stage build
+!dist
+
+# Editor and IDE files
+.idea
+.vscode
+*.swp
+*.swo
+
+# Other
+.DS_Store
+*.log
+.npm
+.editorconfig

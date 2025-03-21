@@ -39,11 +39,8 @@ WORKDIR /app
 # Copy the prepared production build
 COPY --from=builder /app/production /app
 
-# Create a package.json that explicitly includes vite as a production dependency
-RUN cat package.json | jq '.dependencies.vite = .devDependencies.vite | .dependencies["@vitejs/plugin-react"] = .devDependencies["@vitejs/plugin-react"]' > /tmp/package.json && mv /tmp/package.json package.json
-
-# Install production dependencies (now including vite)
-RUN npm ci --only=production
+# In production mode, we still need vite, so install all dependencies
+RUN npm ci
 
 # Expose the application port
 EXPOSE 5000
