@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dekallm-benchmark-ui-config
+  labels:
+    app: dekallm-benchmark-ui
+data:
+  # Environment variables
+  NODE_ENV: "production"
+  # Add other non-sensitive configuration variables here
+  API_TIMEOUT: "30000"
+  MAX_CONCURRENT_TESTS: "5"
