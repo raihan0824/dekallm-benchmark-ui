@@ -17,7 +17,7 @@ export function TestConfigForm({ onSubmit, isLoading }: TestConfigFormProps) {
       user: 100,
       spawnrate: 100,
       duration: 60,
-      model: "Qwen/Qwen2.5-72B-Instruct"
+      model: ""
     }
   });
 
@@ -122,7 +122,7 @@ export function TestConfigForm({ onSubmit, isLoading }: TestConfigFormProps) {
                   <FormLabel>Model (Optional)</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Qwen/Qwen2.5-72B-Instruct"
+                      placeholder="Model name (optional)"
                       {...field}
                       disabled={isLoading}
                     />

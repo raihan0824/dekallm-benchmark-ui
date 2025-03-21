@@ -1,4 +1,3 @@
-import { BarChart3 } from "lucide-react";
 import { Link } from "wouter";
 
 export function AppHeader() {
@@ -8,7 +7,7 @@ export function AppHeader() {
         <div className="flex justify-between items-center h-16">
           <Link href="/">
             <div className="flex items-center cursor-pointer">
-              <BarChart3 className="h-8 w-8 text-primary" />
+              <img src="/images/logo.png" alt="DekaLLM Logo" className="h-8 w-auto" />
               <h1 className="ml-2 text-xl font-semibold text-gray-900">DekaLLM Benchmark UI</h1>
             </div>
           </Link>

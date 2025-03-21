@@ -20,6 +20,54 @@ export function downloadJson(data: any, filename: string) {
   downloadAnchor.remove();
 }
 
+export function downloadCsv(data: BenchmarkResult, filename: string) {
+  // Create CSV header rows
+  let csvContent = "DekaLLM Benchmark Results\n";
+  csvContent += `Date,${new Date().toLocaleString()}\n\n`;
+  
+  // Add configuration section
+  csvContent += "Test Configuration\n";
+  csvContent += "Parameter,Value\n";
+  csvContent += `Model,${data.configuration.model || 'Not specified'}\n`;
+  csvContent += `URL,${data.configuration.url}\n`;
+  csvContent += `Concurrent Users,${data.configuration.user}\n`;
+  csvContent += `Spawn Rate,${data.configuration.spawnrate}\n`;
+  csvContent += `Duration (seconds),${data.configuration.duration}\n`;
+  csvContent += `Tokenizer,${data.configuration.tokenizer || 'Not specified'}\n`;
+  csvContent += `Status,${data.status}\n\n`;
+  
+  // Add metrics section
+  csvContent += "Time to First Token (ms)\n";
+  csvContent += "Average,Median,Min,Max\n";
+  csvContent += `${data.metrics.time_to_first_token.average},${data.metrics.time_to_first_token.median},${data.metrics.time_to_first_token.minimum},${data.metrics.time_to_first_token.maximum}\n\n`;
+  
+  csvContent += "End-to-End Latency (ms)\n";
+  csvContent += "Average,Median,Min,Max\n";
+  csvContent += `${data.metrics.end_to_end_latency.average},${data.metrics.end_to_end_latency.median},${data.metrics.end_to_end_latency.minimum},${data.metrics.end_to_end_latency.maximum}\n\n`;
+  
+  csvContent += "Inter-Token Latency (ms)\n";
+  csvContent += "Average,Median,Min,Max\n";
+  csvContent += `${data.metrics.inter_token_latency.average},${data.metrics.inter_token_latency.median},${data.metrics.inter_token_latency.minimum},${data.metrics.inter_token_latency.maximum}\n\n`;
+  
+  csvContent += "Token Speed (tokens/s)\n";
+  csvContent += "Average,Median,Min,Max\n";
+  csvContent += `${data.metrics.token_speed.average},${data.metrics.token_speed.median},${data.metrics.token_speed.minimum},${data.metrics.token_speed.maximum}\n\n`;
+  
+  csvContent += "Throughput (tokens/s)\n";
+  csvContent += "Input,Output\n";
+  csvContent += `${data.metrics.throughput.input_tokens_per_second},${data.metrics.throughput.output_tokens_per_second}\n`;
+  
+  // Create and trigger download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.href = url;
+  downloadAnchor.setAttribute('download', filename);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  document.body.removeChild(downloadAnchor);
+}
+
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat('en-US', {
