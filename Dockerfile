@@ -17,9 +17,16 @@ RUN echo "BENCHMARK_API_URL=http://localhost" >> .env
 # Build the application
 RUN npm run build
 
-# Create a clean production build
+# Create a clean production build with proper structure
 RUN mkdir -p /app/production
+# Copy server dist files
 RUN cp -r /app/dist /app/production/
+# Ensure client files are in the right place
+RUN mkdir -p /app/production/client/dist
+RUN cp -r /app/client/dist/* /app/production/client/dist/
+# Create a linked directory for better compatibility
+RUN mkdir -p /app/production/dist
+RUN ln -s /app/production/client/dist /app/production/dist/
 RUN cp package*.json /app/production/
 
 # Production stage

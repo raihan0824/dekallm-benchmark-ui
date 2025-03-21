@@ -122,8 +122,8 @@ const app = express();
 // Middleware for JSON parsing
 app.use(express.json());
 
-// Serve static files from the client/dist directory
-app.use(express.static(path.join(__dirname, '../client/dist')));
+// Serve static files from the dist directory
+app.use(express.static(path.join(__dirname, '../dist')));
 
 // Route to run a benchmark test
 app.post("/api/benchmarks", async (req, res) => {
@@ -233,12 +233,53 @@ app.get("/api/benchmarks/:id", async (req, res) => {
 // Add catch-all route last (after API routes are registered)
 // All other routes serve the main index.html file
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  const indexPath = path.join(__dirname, '../dist/index.html');
+  
+  // Check if the file exists before sending it
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    console.error(`Error: index.html not found at ${indexPath}`);
+    // Log directory contents for debugging
+    try {
+      const distPath = path.join(__dirname, '../dist');
+      if (fs.existsSync(distPath)) {
+        console.log('Contents of dist directory:', fs.readdirSync(distPath));
+      } else {
+        console.log('dist directory does not exist at', distPath);
+        console.log('Current directory structure:', fs.readdirSync(path.join(__dirname, '..')));
+      }
+    } catch (error) {
+      console.error('Error listing directory contents:', error);
+    }
+    
+    res.status(404).send('Application files not found. Please contact support.');
+  }
 });
 
 // Create HTTP server and start
 const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Log the directory structure at startup for debugging
+try {
+  console.log('Current directory:', __dirname);
+  console.log('Directory structure at app root:', fs.readdirSync(path.join(__dirname, '..')));
+  
+  // Check if dist directory exists and log its contents
+  const distPath = path.join(__dirname, '../dist');
+  if (fs.existsSync(distPath)) {
+    console.log('Contents of dist directory:', fs.readdirSync(distPath));
+    
+    // Check if index.html exists
+    const indexPath = path.join(distPath, 'index.html');
+    console.log('index.html exists:', fs.existsSync(indexPath));
+  } else {
+    console.log('dist directory does not exist');
+  }
+} catch (error) {
+  console.error('Error checking directory structure:', error);
+}
 
 httpServer.listen(PORT, () => {
   console.log(`Production server running on port ${PORT}`);
