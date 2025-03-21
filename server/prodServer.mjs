@@ -140,31 +140,107 @@ app.get("/api/benchmarks/:id", async (req, res) => {
   }
 });
 
-// We don't need to copy files around since we have proper paths
-// Just log where the client files are located for debugging
-function logClientFilesLocations() {
-  console.log("Checking client files locations...");
+// Helper function to ensure client files are copied to all possible locations
+// This is a runtime backup in case the Docker build misses something
+function ensureClientFiles() {
+  console.log("Ensuring client files are in all required locations...");
   
   try {
+    // Possible source locations where client files may have been built
+    const possibleSourceDirs = [
+      path.join(__dirname, '../client/dist'),
+      path.join(__dirname, '../dist/public'),
+      path.join(__dirname, '../dist/client')
+    ];
+    
+    // Target locations where files need to be
+    const targetDirs = [
+      path.join(__dirname, '../client/dist'),
+      path.join(__dirname, '../dist/client'),
+      path.join(__dirname, '../dist/public')
+    ];
+    
+    // Find a valid source directory
+    let sourceDir = null;
+    for (const dir of possibleSourceDirs) {
+      if (fs.existsSync(dir) && 
+          fs.existsSync(path.join(dir, 'index.html'))) {
+        sourceDir = dir;
+        console.log(`Found valid source directory: ${sourceDir}`);
+        break;
+      }
+    }
+    
+    if (!sourceDir) {
+      console.log("No valid source directory found with client files");
+      return;
+    }
+    
+    // Copy to all target directories
+    for (const targetDir of targetDirs) {
+      if (targetDir !== sourceDir) {
+        try {
+          // Create target directory if it doesn't exist
+          if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+            console.log(`Created target directory: ${targetDir}`);
+          }
+          
+          // Copy index.html
+          const sourceIndex = path.join(sourceDir, 'index.html');
+          const targetIndex = path.join(targetDir, 'index.html');
+          
+          if (fs.existsSync(sourceIndex)) {
+            fs.copyFileSync(sourceIndex, targetIndex);
+            console.log(`Copied index.html to ${targetDir}`);
+          }
+          
+          // Copy assets directory if it exists
+          const sourceAssets = path.join(sourceDir, 'assets');
+          const targetAssets = path.join(targetDir, 'assets');
+          
+          if (fs.existsSync(sourceAssets)) {
+            // Create target assets directory
+            if (!fs.existsSync(targetAssets)) {
+              fs.mkdirSync(targetAssets, { recursive: true });
+            }
+            
+            // Copy all files in assets
+            const assetFiles = fs.readdirSync(sourceAssets);
+            for (const file of assetFiles) {
+              const sourcePath = path.join(sourceAssets, file);
+              const targetPath = path.join(targetAssets, file);
+              
+              if (fs.statSync(sourcePath).isFile()) {
+                fs.copyFileSync(sourcePath, targetPath);
+              }
+            }
+            console.log(`Copied assets to ${targetDir}`);
+          }
+        } catch (err) {
+          console.error(`Error copying to ${targetDir}:`, err);
+        }
+      }
+    }
+    
     // Log all paths we're checking for index.html
-    const possiblePaths = [
+    console.log('All paths being checked for index.html:');
+    [
       path.join(__dirname, '../dist/public/index.html'),
       path.join(__dirname, '../client/dist/index.html'),
       path.join(__dirname, '../dist/client/index.html'),
       path.join(__dirname, '../dist/index.html')
-    ];
-    
-    console.log('Checking for index.html files:');
-    for (const p of possiblePaths) {
+    ].forEach(p => {
       console.log(`- ${p} exists: ${fs.existsSync(p)}`);
-    }
+    });
+    
   } catch (err) {
-    console.error("Error checking client files:", err);
+    console.error("Error ensuring client files:", err);
   }
 }
 
-// Just log where files are located
-logClientFilesLocations();
+// Run the function to ensure client files are in all needed locations
+ensureClientFiles();
 
 // Create HTTP server
 const httpServer = createServer(app);
