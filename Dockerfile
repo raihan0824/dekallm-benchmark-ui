@@ -12,12 +12,21 @@ COPY . .
 
 # Create a default .env file for the build process
 RUN echo "NODE_ENV=production" > .env
+RUN echo "BENCHMARK_API_URL=http://localhost" >> .env
 
 # Build the application
 RUN npm run build
 
+# Create a clean production build
+RUN mkdir -p /app/production
+RUN cp -r /app/dist /app/production/
+RUN cp package*.json /app/production/
+
 # Production stage
 FROM node:20-alpine as production
+
+# Install jq for JSON processing
+RUN apk add --no-cache jq
 
 # Set environment to production
 ENV NODE_ENV=production
@@ -27,18 +36,14 @@ ENV BENCHMARK_API_URL=http://localhost
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy the prepared production build
+COPY --from=builder /app/production /app
 
-# Install only production dependencies
-RUN npm ci --omit=dev
+# Create a package.json that explicitly includes vite as a production dependency
+RUN cat package.json | jq '.dependencies.vite = .devDependencies.vite | .dependencies["@vitejs/plugin-react"] = .devDependencies["@vitejs/plugin-react"]' > /tmp/package.json && mv /tmp/package.json package.json
 
-# Create necessary directory structure
-RUN mkdir -p ./dist
-
-# Copy built application from builder stage
-COPY --from=builder /app/dist/index.js ./dist/index.js
-COPY --from=builder /app/dist/public ./dist/public
+# Install production dependencies (now including vite)
+RUN npm ci --only=production
 
 # Expose the application port
 EXPOSE 5000
