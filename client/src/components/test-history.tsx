@@ -40,7 +40,7 @@ export function TestHistory({ history, onSelectTest, isLoading }: TestHistoryPro
           history.map((item) => (
             <div key={item.id} className="py-2 border-b border-gray-200 last:border-0">
               <div className="flex justify-between items-center">
-                <div className="text-sm font-medium truncate max-w-[70%]" title={item.url}>{item.url}</div>
+                <div className="text-sm font-medium truncate max-w-[70%]" title={item.model || "Unknown model"}>{item.model || "Unknown model"}</div>
                 <div className="text-xs text-gray-500">{formatDate(item.createdAt)}</div>
               </div>
               <div className="mt-1 flex items-center text-xs">

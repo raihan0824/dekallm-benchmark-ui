@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { BarChart3 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -10,17 +9,9 @@ export function AppHeader() {
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <BarChart3 className="h-8 w-8 text-primary" />
-              <h1 className="ml-2 text-xl font-semibold text-gray-900">Benchmark API Dashboard</h1>
+              <h1 className="ml-2 text-xl font-semibold text-gray-900">DekaLLM Benchmark UI</h1>
             </div>
           </Link>
-          <div className="flex items-center">
-            <Button variant="outline" className="mr-2">
-              History
-            </Button>
-            <Button>
-              Documentation
-            </Button>
-          </div>
         </div>
       </div>
     </header>

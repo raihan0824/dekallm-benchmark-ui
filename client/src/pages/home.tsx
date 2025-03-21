@@ -6,7 +6,7 @@ import { TestHistory } from "@/components/test-history";
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { BenchmarkConfig, BenchmarkResult } from "@shared/schema";
+import { BenchmarkConfig, BenchmarkResult, BenchmarkTest } from "@shared/schema";
 import { type TestHistoryItem, type AppState } from "@/lib/types";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -22,27 +22,25 @@ export default function Home() {
 
   // Fetch test history
   const { 
-    data: historyData,
+    data: historyData = [],
     isLoading: historyLoading,
     error: historyError
-  } = useQuery({
+  } = useQuery<BenchmarkTest[]>({
     queryKey: ['/api/benchmarks'],
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Format history data
-  const history: TestHistoryItem[] = historyData 
-    ? historyData.map((item: any) => ({
-        id: item.id,
-        url: item.url,
-        user: item.user,
-        spawnrate: item.spawnrate,
-        duration: item.duration,
-        model: item.model,
-        status: item.status,
-        createdAt: item.createdAt,
-      }))
-    : [];
+  const history: TestHistoryItem[] = historyData.map((item: any) => ({
+    id: item.id,
+    url: item.url,
+    user: item.user,
+    spawnrate: item.spawnrate,
+    duration: item.duration,
+    model: item.model,
+    status: item.status,
+    createdAt: item.createdAt,
+  }));
 
   // Mutation for running a benchmark test
   const runBenchmarkMutation = useMutation({
