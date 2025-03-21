@@ -27,8 +27,12 @@ const app = express();
 // Middleware for JSON parsing
 app.use(express.json());
 
-// Serve static files from the client/dist directory relative to the current file
-app.use(express.static(path.join(__dirname, '../client/dist')));
+// Serve static files from multiple potential locations
+// Try in the order of most likely locations first
+app.use(express.static(path.join(__dirname, '../dist/public'))); // From vite.config.ts
+app.use(express.static(path.join(__dirname, '../client/dist'))); // Common structure
+app.use(express.static(path.join(__dirname, '../dist/client'))); // Alternative location
+app.use(express.static(path.join(__dirname, '../dist'))); // Root dist folder
 
 // Implement routes directly in the prodServer file
 // Route to run a benchmark test
@@ -136,6 +140,108 @@ app.get("/api/benchmarks/:id", async (req, res) => {
   }
 });
 
+// Helper function to ensure client files are copied to all possible locations
+// This is a runtime backup in case the Docker build misses something
+function ensureClientFiles() {
+  console.log("Ensuring client files are in all required locations...");
+  
+  try {
+    // Possible source locations where client files may have been built
+    const possibleSourceDirs = [
+      path.join(__dirname, '../client/dist'),
+      path.join(__dirname, '../dist/public'),
+      path.join(__dirname, '../dist/client')
+    ];
+    
+    // Target locations where files need to be
+    const targetDirs = [
+      path.join(__dirname, '../client/dist'),
+      path.join(__dirname, '../dist/client'),
+      path.join(__dirname, '../dist/public')
+    ];
+    
+    // Find a valid source directory
+    let sourceDir = null;
+    for (const dir of possibleSourceDirs) {
+      if (fs.existsSync(dir) && 
+          fs.existsSync(path.join(dir, 'index.html'))) {
+        sourceDir = dir;
+        console.log(`Found valid source directory: ${sourceDir}`);
+        break;
+      }
+    }
+    
+    if (!sourceDir) {
+      console.log("No valid source directory found with client files");
+      return;
+    }
+    
+    // Copy to all target directories
+    for (const targetDir of targetDirs) {
+      if (targetDir !== sourceDir) {
+        try {
+          // Create target directory if it doesn't exist
+          if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+            console.log(`Created target directory: ${targetDir}`);
+          }
+          
+          // Copy index.html
+          const sourceIndex = path.join(sourceDir, 'index.html');
+          const targetIndex = path.join(targetDir, 'index.html');
+          
+          if (fs.existsSync(sourceIndex)) {
+            fs.copyFileSync(sourceIndex, targetIndex);
+            console.log(`Copied index.html to ${targetDir}`);
+          }
+          
+          // Copy assets directory if it exists
+          const sourceAssets = path.join(sourceDir, 'assets');
+          const targetAssets = path.join(targetDir, 'assets');
+          
+          if (fs.existsSync(sourceAssets)) {
+            // Create target assets directory
+            if (!fs.existsSync(targetAssets)) {
+              fs.mkdirSync(targetAssets, { recursive: true });
+            }
+            
+            // Copy all files in assets
+            const assetFiles = fs.readdirSync(sourceAssets);
+            for (const file of assetFiles) {
+              const sourcePath = path.join(sourceAssets, file);
+              const targetPath = path.join(targetAssets, file);
+              
+              if (fs.statSync(sourcePath).isFile()) {
+                fs.copyFileSync(sourcePath, targetPath);
+              }
+            }
+            console.log(`Copied assets to ${targetDir}`);
+          }
+        } catch (err) {
+          console.error(`Error copying to ${targetDir}:`, err);
+        }
+      }
+    }
+    
+    // Log all paths we're checking for index.html
+    console.log('All paths being checked for index.html:');
+    [
+      path.join(__dirname, '../dist/public/index.html'),
+      path.join(__dirname, '../client/dist/index.html'),
+      path.join(__dirname, '../dist/client/index.html'),
+      path.join(__dirname, '../dist/index.html')
+    ].forEach(p => {
+      console.log(`- ${p} exists: ${fs.existsSync(p)}`);
+    });
+    
+  } catch (err) {
+    console.error("Error ensuring client files:", err);
+  }
+}
+
+// Run the function to ensure client files are in all needed locations
+ensureClientFiles();
+
 // Create HTTP server
 const httpServer = createServer(app);
 
@@ -148,5 +254,45 @@ httpServer.listen(PORT, () => {
 // Add catch-all route last (after API routes are registered)
 // All other routes serve the main index.html file
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  // Try multiple potential locations for index.html
+  const possiblePaths = [
+    path.join(__dirname, '../dist/public/index.html'),
+    path.join(__dirname, '../client/dist/index.html'),
+    path.join(__dirname, '../dist/client/index.html'),
+    path.join(__dirname, '../dist/index.html')
+  ];
+  
+  // Try each path until we find one that exists
+  for (const indexPath of possiblePaths) {
+    if (fs.existsSync(indexPath)) {
+      console.log(`Found index.html at ${indexPath}`);
+      return res.sendFile(indexPath);
+    }
+  }
+  
+  // If we get here, we didn't find index.html
+  console.error(`Error: index.html not found in any of the expected locations`);
+  
+  // Log directory contents for debugging
+  try {
+    console.log('Checking directory structure...');
+    
+    const rootDir = path.join(__dirname, '..');
+    console.log(`Contents of ${rootDir}:`, fs.readdirSync(rootDir));
+    
+    const distPath = path.join(__dirname, '../dist');
+    if (fs.existsSync(distPath)) {
+      console.log(`Contents of ${distPath}:`, fs.readdirSync(distPath));
+    }
+    
+    const clientDistPath = path.join(__dirname, '../client/dist');
+    if (fs.existsSync(clientDistPath)) {
+      console.log(`Contents of ${clientDistPath}:`, fs.readdirSync(clientDistPath));
+    }
+    
+  } catch (error) {
+    console.error('Error listing directory contents:', error);
+  }
+  
+  return res.status(404).send('Application files not found. Please contact support.');
 });

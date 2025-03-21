@@ -15,6 +15,13 @@ RUN echo "NODE_ENV=production" > .env
 RUN echo "BENCHMARK_API_URL=http://localhost" >> .env
 
 # Build the application
+# First, build just the client to ensure front-end assets are created
+RUN cd client && npx vite build
+# Check where client files were created
+RUN echo "After client build:"
+RUN find /app -name "index.html" || echo "No index.html found after client build"
+RUN ls -la /app/client/dist || echo "No client/dist directory"
+# Then run the full build
 RUN npm run build
 
 # Create a clean production build with proper structure
@@ -31,8 +38,14 @@ RUN ls -la /app/dist
 RUN ls -la /app || echo "No /app directory" 
 RUN find /app -name "index.html" || echo "No index.html found"
 
-# Copy client files - according to vite.config.ts, they should be in dist/public
-RUN if [ -d "/app/dist/public" ]; then \
+# Copy client files - check all possible locations
+RUN if [ -d "/app/client/dist" ]; then \
+      # Copy from client/dist (from the direct client build)
+      mkdir -p /app/production/client/dist; \
+      cp -r /app/client/dist/* /app/production/client/dist/; \
+      echo "Copied from /app/client/dist to /app/production/client/dist"; \
+    elif [ -d "/app/dist/public" ]; then \
+      # Copy from dist/public (from vite.config.ts)
       mkdir -p /app/production/client/dist; \
       cp -r /app/dist/public/* /app/production/client/dist/; \
       echo "Copied from /app/dist/public to /app/production/client/dist"; \
@@ -40,10 +53,12 @@ RUN if [ -d "/app/dist/public" ]; then \
       mkdir -p /app/production/dist/public; \
       cp -r /app/dist/public/* /app/production/dist/public/; \
     elif [ -d "/app/dist/client" ]; then \
+      # Copy from dist/client
       mkdir -p /app/production/client/dist; \
       cp -r /app/dist/client/* /app/production/client/dist/; \
       echo "Copied from /app/dist/client to /app/production/client/dist"; \
     elif [ -d "/app/dist/assets" ]; then \
+      # Copy from dist root if it has assets
       mkdir -p /app/production/client/dist/assets; \
       cp -r /app/dist/assets /app/production/client/dist/; \
       cp /app/dist/index.html /app/production/client/dist/ || echo "No index.html in /app/dist"; \
@@ -93,6 +108,12 @@ ENV IN_DOCKER=true
 # Create a modified server/vite.ts that uses our shims in production mode
 RUN echo 'import viteConfig from "../vite.config";' > /app/dist/vite-config-shim.js
 COPY server/shimViteConfig.js /app/vite.config.js
+
+# Check directory structure for debugging
+RUN echo "Docker production environment file structure:"
+RUN find /app -type d | sort
+RUN echo "Checking for index.html files:"
+RUN find /app -name "index.html" | sort
 
 # Copy our production server file (CommonJS version)
 COPY server/prodServer.cjs /app/dist/prodServer.cjs
