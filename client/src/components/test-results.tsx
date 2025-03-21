@@ -5,12 +5,18 @@ import { Loader2, AlertCircle, FileDown, FileText } from "lucide-react";
 import { TestResultsProps } from "@/lib/types";
 import { MetricsDisplay } from "./metrics-display";
 import { ChartCard } from "./ui/chart-card";
-import { downloadJson, getMetricChartData, getMetricColors } from "@/lib/utils";
+import { downloadJson, downloadCsv, getMetricChartData, getMetricColors } from "@/lib/utils";
 
 export function TestResults({ results, isLoading, error }: TestResultsProps) {
   const handleExportJson = () => {
     if (results) {
       downloadJson(results, `benchmark-results-${new Date().toISOString()}.json`);
+    }
+  };
+  
+  const handleExportCsv = () => {
+    if (results) {
+      downloadCsv(results, `benchmark-report-${new Date().toISOString()}.csv`);
     }
   };
 
@@ -100,7 +106,7 @@ export function TestResults({ results, isLoading, error }: TestResultsProps) {
           <FileDown className="mr-2 h-4 w-4" />
           Export JSON
         </Button>
-        <Button>
+        <Button onClick={handleExportCsv}>
           <FileText className="mr-2 h-4 w-4" />
           Export Report
         </Button>
