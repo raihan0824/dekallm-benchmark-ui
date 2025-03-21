@@ -14,15 +14,16 @@ COPY . .
 RUN echo "NODE_ENV=production" > .env
 RUN echo "BENCHMARK_API_URL=http://localhost" >> .env
 
-# Build the application
-# First, build just the client to ensure front-end assets are created
-RUN cd client && npx vite build
-# Check where client files were created
-RUN echo "After client build:"
-RUN find /app -name "index.html" || echo "No index.html found after client build"
-RUN ls -la /app/client/dist || echo "No client/dist directory"
-# Then run the full build
+# Fix the border-border issue first
+RUN sed -i 's/@apply border-border;//g' /app/client/src/index.css
+
+# Build the application - skip separate client build as it's included in npm run build
 RUN npm run build
+
+# Check where client files were created
+RUN echo "After build:"
+RUN find /app -name "index.html" || echo "No index.html found after build" 
+RUN ls -la /app/client/dist || echo "No client/dist directory"
 
 # Create a clean production build with proper structure
 RUN mkdir -p /app/production
