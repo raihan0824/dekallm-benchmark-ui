@@ -39,11 +39,26 @@ WORKDIR /app
 # Copy the prepared production build
 COPY --from=builder /app/production /app
 
-# In production mode, we still need vite, so install all dependencies
-RUN npm ci
+# Install production dependencies only
+RUN npm ci --only=production
+
+# Create directories for vite shims
+RUN mkdir -p /app/node_modules/vite
+RUN mkdir -p /app/node_modules/@vitejs/plugin-react
+
+# Copy our Vite shims for production mode
+COPY server/shimVite.js /app/node_modules/vite/index.js
+COPY server/shimVitePluginReact.js /app/node_modules/@vitejs/plugin-react/index.js
+
+# Set up environment variable to indicate we're in production/Docker
+ENV IN_DOCKER=true
+
+# Create a modified server/vite.ts that uses our shims in production mode
+RUN echo 'import viteConfig from "../vite.config";' > /app/dist/vite-config-shim.js
+COPY server/shimViteConfig.js /app/vite.config.js
 
 # Expose the application port
 EXPOSE 5000
 
-# Start the application
-CMD ["node", "dist/index.js"]
+# Start the application using our production server instead
+CMD ["node", "dist/prodServer.js"]
