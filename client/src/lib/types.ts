@@ -1,4 +1,4 @@
-import { BenchmarkConfig, BenchmarkResult, BenchmarkTest } from "@shared/schema";
+import { BenchmarkConfig, BenchmarkResults, BenchmarkResponse } from "@shared/schema";
 
 export type TestHistoryItem = {
   id: number;
@@ -17,7 +17,7 @@ export type TestConfigFormProps = {
 };
 
 export type TestResultsProps = {
-  results: BenchmarkResult | null;
+  results: BenchmarkResults | null;
   isLoading: boolean;
   error: string | null;
 };
@@ -33,7 +33,7 @@ export type ChartCardProps = {
 };
 
 export type MetricsDisplayProps = {
-  results: BenchmarkResult;
+  results: BenchmarkResults;
 };
 
 export type TestHistoryProps = {
@@ -44,7 +44,7 @@ export type TestHistoryProps = {
 
 export type AppState = {
   isLoading: boolean;
-  results: BenchmarkResult | null;
+  results: BenchmarkResults | null;
   error: string | null;
   selectedTestId: number | null;
 };

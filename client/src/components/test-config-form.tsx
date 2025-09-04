@@ -17,7 +17,8 @@ export function TestConfigForm({ onSubmit, isLoading }: TestConfigFormProps) {
       user: 50,      // Reduced default user count for faster tests
       spawnrate: 50,  // Reduced default spawn rate
       duration: 5,    // Reduced default duration to avoid timeouts
-      model: ""
+      model: "",
+      dataset: "mteb/banking77"
     }
   });
 
@@ -127,6 +128,28 @@ export function TestConfigForm({ onSubmit, isLoading }: TestConfigFormProps) {
                       disabled={isLoading}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="dataset"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Dataset</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value="mteb/banking77"
+                      disabled={true}
+                      className="bg-muted"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Dataset used for benchmarking (read-only)
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

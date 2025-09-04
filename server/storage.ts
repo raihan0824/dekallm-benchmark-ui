@@ -1,30 +1,19 @@
-import { users, type User, type InsertUser, type BenchmarkTest, type InsertBenchmarkTest, type BenchmarkResult } from "@shared/schema";
+import { users, type User, type InsertUser } from "@shared/schema";
 
-// modify the interface with any CRUD methods
-// you might need
-
-export interface IStorage {
+// User storage interface for authentication (if needed)
+export interface IUserStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-
-  // Benchmark test methods
-  getBenchmarkTests(): Promise<BenchmarkTest[]>;
-  getBenchmarkTest(id: number): Promise<BenchmarkTest | undefined>;
-  createBenchmarkTest(test: InsertBenchmarkTest & { results?: BenchmarkResult }): Promise<BenchmarkTest>;
 }
 
-export class MemStorage implements IStorage {
+export class MemUserStorage implements IUserStorage {
   private users: Map<number, User>;
-  private benchmarkTests: Map<number, BenchmarkTest>;
   currentId: number;
-  currentBenchmarkId: number;
 
   constructor() {
     this.users = new Map();
-    this.benchmarkTests = new Map();
     this.currentId = 1;
-    this.currentBenchmarkId = 1;
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -43,35 +32,6 @@ export class MemStorage implements IStorage {
     this.users.set(id, user);
     return user;
   }
-
-  async getBenchmarkTests(): Promise<BenchmarkTest[]> {
-    return Array.from(this.benchmarkTests.values()).sort((a, b) => {
-      // Sort by createdAt in descending order (newest first)
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA;
-    });
-  }
-
-  async getBenchmarkTest(id: number): Promise<BenchmarkTest | undefined> {
-    return this.benchmarkTests.get(id);
-  }
-
-  async createBenchmarkTest(insertTest: InsertBenchmarkTest & { results?: BenchmarkResult }): Promise<BenchmarkTest> {
-    const id = this.currentBenchmarkId++;
-    const now = new Date();
-    const test: BenchmarkTest = {
-      ...insertTest,
-      id,
-      createdAt: now,
-      // Ensure properties match BenchmarkTest type
-      model: insertTest.model || null,
-      tokenizer: insertTest.tokenizer || null,
-      results: insertTest.results || null
-    };
-    this.benchmarkTests.set(id, test);
-    return test;
-  }
 }
 
-export const storage = new MemStorage();
+export const userStorage = new MemUserStorage();

@@ -1,7 +1,8 @@
-import { pgTable, text, serial, integer, boolean, json, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// User schema (kept for potential authentication needs)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -16,74 +17,89 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-// Benchmark schema
-export const benchmarkTests = pgTable("benchmark_tests", {
-  id: serial("id").primaryKey(),
-  url: text("url").notNull(),
-  user: integer("user").notNull(),
-  spawnrate: integer("spawnrate").notNull(),
-  duration: integer("duration").notNull(),
-  model: text("model"),
-  tokenizer: text("tokenizer"),
-  status: text("status").notNull(),
-  results: json("results"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertBenchmarkTestSchema = createInsertSchema(benchmarkTests).pick({
-  url: true,
-  user: true,
-  spawnrate: true,
-  duration: true,
-  model: true,
-  tokenizer: true,
-  status: true,
-});
-
+// Benchmark configuration schema for API requests (matches API spec)
 export const benchmarkConfigSchema = z.object({
-  url: z.string().url("Please enter a valid URL"),
-  user: z.coerce.number().int().positive("Number of users must be positive"),
-  spawnrate: z.coerce.number().int().positive("Spawn rate must be positive"),
-  duration: z.coerce.number().int().positive("Duration must be positive"),
+  url: z.string().url("Please enter a valid URL").default("https://dekallm.cloudeka.ai"),
+  user: z.coerce.number().int().positive("Number of users must be positive").default(100),
+  spawnrate: z.coerce.number().int().positive("Spawn rate must be positive").default(100),
+  duration: z.coerce.number().int().positive("Duration must be positive").default(60),
   model: z.string().optional(),
+  tokenizer: z.string().optional(),
+  dataset: z.string().default("mteb/banking77"),
 });
 
 export type BenchmarkConfig = z.infer<typeof benchmarkConfigSchema>;
-export type InsertBenchmarkTest = z.infer<typeof insertBenchmarkTestSchema>;
-export type BenchmarkTest = typeof benchmarkTests.$inferSelect;
 
-// Define the response data structure
-export const metricStatsSchema = z.object({
+// API response schemas (matching OpenAPI specification)
+export const benchmarkMetricsSchema = z.object({
   average: z.number(),
   maximum: z.number(),
   minimum: z.number(),
   median: z.number(),
 });
 
-export const throughputSchema = z.object({
+export const benchmarkThroughputSchema = z.object({
   input_tokens_per_second: z.number(),
   output_tokens_per_second: z.number(),
 });
 
-export const benchmarkResultSchema = z.object({
-  status: z.string(),
-  metrics: z.object({
-    time_to_first_token: metricStatsSchema,
-    end_to_end_latency: metricStatsSchema,
-    inter_token_latency: metricStatsSchema,
-    token_speed: metricStatsSchema,
-    throughput: throughputSchema,
-  }),
-  configuration: z.object({
-    user: z.number(),
-    spawnrate: z.number(),
-    model: z.string(),
-    tokenizer: z.string(),
-    url: z.string(),
-    duration: z.number(),
-  }),
+export const benchmarkMetricsDataSchema = z.object({
+  time_to_first_token: benchmarkMetricsSchema,
+  end_to_end_latency: benchmarkMetricsSchema,
+  inter_token_latency: benchmarkMetricsSchema,
+  token_speed: benchmarkMetricsSchema,
+  throughput: benchmarkThroughputSchema,
 });
 
-export type BenchmarkResult = z.infer<typeof benchmarkResultSchema>;
-export type MetricStats = z.infer<typeof metricStatsSchema>;
-export type Throughput = z.infer<typeof throughputSchema>;
+export const benchmarkConfigurationSchema = z.object({
+  user: z.number(),
+  spawnrate: z.number(),
+  model: z.string(),
+  tokenizer: z.string(),
+  url: z.string(),
+  duration: z.number(),
+  dataset: z.string(),
+});
+
+export const benchmarkResultsSchema = z.object({
+  status: z.string(),
+  metrics: benchmarkMetricsDataSchema,
+  configuration: benchmarkConfigurationSchema,
+});
+
+// Main benchmark response schema
+export const benchmarkResponseSchema = z.object({
+  id: z.number(),
+  url: z.string(),
+  user: z.number(),
+  spawnrate: z.number(),
+  duration: z.number(),
+  model: z.string(),
+  tokenizer: z.string(),
+  dataset: z.string(),
+  status: z.string(),
+  results: benchmarkResultsSchema,
+  createdAt: z.string().transform((val) => new Date(val).toISOString()),
+});
+
+// List response for paginated results
+export const benchmarkListResponseSchema = z.object({
+  results: z.array(benchmarkResponseSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+});
+
+// Export types
+export type BenchmarkMetrics = z.infer<typeof benchmarkMetricsSchema>;
+export type BenchmarkThroughput = z.infer<typeof benchmarkThroughputSchema>;
+export type BenchmarkMetricsData = z.infer<typeof benchmarkMetricsDataSchema>;
+export type BenchmarkConfiguration = z.infer<typeof benchmarkConfigurationSchema>;
+export type BenchmarkResults = z.infer<typeof benchmarkResultsSchema>;
+export type BenchmarkResponse = z.infer<typeof benchmarkResponseSchema>;
+export type BenchmarkListResponse = z.infer<typeof benchmarkListResponseSchema>;
+
+// Backward compatibility
+export type BenchmarkTest = BenchmarkResponse;
+export type MetricStats = BenchmarkMetrics;
+export type Throughput = BenchmarkThroughput;

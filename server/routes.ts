@@ -1,8 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
 import axios from "axios";
-import { benchmarkConfigSchema, benchmarkResultSchema } from "@shared/schema";
+import { benchmarkConfigSchema, benchmarkResponseSchema, benchmarkListResponseSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -52,22 +51,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Validate response data
-        const result = benchmarkResultSchema.parse(response.data);
+        const result = benchmarkResponseSchema.parse(response.data);
         console.log("Validation passed for benchmark result");
         
-        // Store the benchmark test in the database
-        const test = await storage.createBenchmarkTest({
-          url: benchmarkConfig.url,
-          user: benchmarkConfig.user,
-          spawnrate: benchmarkConfig.spawnrate,
-          duration: benchmarkConfig.duration,
-          model: result.configuration.model,
-          tokenizer: result.configuration.tokenizer,
-          status: result.status,
-          results: result
-        });
-        
-        console.log("Benchmark test stored with ID:", test.id);
+        // Return the result directly - data is now stored by the benchmark API
         return res.status(200).json(result);
       } catch (error) {
         console.error("Error calling benchmark API:", error);
@@ -121,20 +108,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Route to get benchmark test history
+  // Route to get benchmark test history from the benchmark API
   app.get("/api/benchmarks", async (req, res) => {
     try {
-      const benchmarks = await storage.getBenchmarkTests();
-      return res.status(200).json(benchmarks);
+      const benchmarkApiUrl = process.env.BENCHMARK_API_URL || 'http://localhost';
+      const historyUrl = `${benchmarkApiUrl}/benchmarks`;
+      
+      console.log(`Fetching benchmark history from: ${historyUrl}`);
+      
+      const response = await axios.get(historyUrl, {
+        headers: {
+          'accept': 'application/json'
+        },
+        timeout: 10000, // 10 second timeout
+      });
+      
+      return res.status(200).json(response.data);
     } catch (error) {
       console.error('Error fetching benchmark history:', error);
+      
+      if (axios.isAxiosError(error)) {
+        const statusCode = error.response?.status || 500;
+        let message = error.response?.data?.message || error.message || 'Failed to fetch benchmark history';
+        
+        return res.status(statusCode).json({
+          message: `Benchmark API Error: ${message}`,
+          error: error.code
+        });
+      }
+      
       return res.status(500).json({
         message: 'Failed to fetch benchmark history'
       });
     }
   });
 
-  // Route to get a specific benchmark test by ID
+  // Route to get a specific benchmark test by ID from the benchmark API
   app.get("/api/benchmarks/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -144,16 +153,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const benchmark = await storage.getBenchmarkTest(id);
-      if (!benchmark) {
-        return res.status(404).json({
-          message: 'Benchmark test not found'
+      const benchmarkApiUrl = process.env.BENCHMARK_API_URL || 'http://localhost';
+      const benchmarkUrl = `${benchmarkApiUrl}/benchmarks/${id}`;
+      
+      console.log(`Fetching benchmark test from: ${benchmarkUrl}`);
+      
+      const response = await axios.get(benchmarkUrl, {
+        headers: {
+          'accept': 'application/json'
+        },
+        timeout: 10000, // 10 second timeout
+      });
+      
+      return res.status(200).json(response.data);
+    } catch (error) {
+      console.error('Error fetching benchmark test:', error);
+      
+      if (axios.isAxiosError(error)) {
+        const statusCode = error.response?.status || 500;
+        let message = error.response?.data?.message || error.message || 'Failed to fetch benchmark test';
+        
+        if (error.response?.status === 404) {
+          return res.status(404).json({
+            message: 'Benchmark test not found'
+          });
+        }
+        
+        return res.status(statusCode).json({
+          message: `Benchmark API Error: ${message}`,
+          error: error.code
         });
       }
       
-      return res.status(200).json(benchmark);
-    } catch (error) {
-      console.error('Error fetching benchmark test:', error);
       return res.status(500).json({
         message: 'Failed to fetch benchmark test'
       });

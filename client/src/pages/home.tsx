@@ -7,7 +7,7 @@ import { ApiStatusBanner } from "@/components/api-status-banner";
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { BenchmarkConfig, BenchmarkResult, BenchmarkTest } from "@shared/schema";
+import { BenchmarkConfig, BenchmarkResults, BenchmarkResponse } from "@shared/schema";
 import { type TestHistoryItem, type AppState } from "@/lib/types";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -31,9 +31,12 @@ export default function Home() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Format history data
-  const history: TestHistoryItem[] = Array.isArray(historyData) 
-    ? historyData.map((item: any) => ({
+  // Format history data - handle both array response and paginated response
+  const history: TestHistoryItem[] = historyData
+    ? (Array.isArray(historyData) 
+        ? historyData 
+        : historyData.results || []
+      ).map((item: any) => ({
         id: item.id,
         url: item.url,
         user: item.user,
@@ -54,8 +57,8 @@ export default function Home() {
     onMutate: () => {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
     },
-    onSuccess: (data: BenchmarkResult) => {
-      setState(prev => ({ ...prev, isLoading: false, results: data, error: null }));
+    onSuccess: (data: BenchmarkResponse) => {
+      setState(prev => ({ ...prev, isLoading: false, results: data.results, error: null }));
       queryClient.invalidateQueries({ queryKey: ['/api/benchmarks'] });
       toast({
         title: "Benchmark Test Completed",

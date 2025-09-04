@@ -21,6 +21,9 @@ export default function Dashboard() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  // Ensure historyData is treated as an array
+  const benchmarkHistory = Array.isArray(historyData) ? historyData : [];
+
   if (error) {
     toast({
       variant: "destructive",
@@ -58,7 +61,7 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-            ) : historyData?.length === 0 ? (
+            ) : benchmarkHistory.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">No benchmark tests have been run yet.</p>
                 <Link href="/">
@@ -67,7 +70,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-2">
-                {historyData?.map((test: any) => (
+                {benchmarkHistory.map((test: any) => (
                   <div key={test.id} className="flex justify-between items-center p-4 border-b border-gray-200 last:border-b-0">
                     <div>
                       <h3 className="font-medium text-gray-900 truncate max-w-md" title={test.url}>

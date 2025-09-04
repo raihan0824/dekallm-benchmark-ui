@@ -57,7 +57,7 @@ export function ChartCard({
             beginAtZero: true,
             grid: {
               drawBorder: false,
-            },
+            } as any,
           },
           x: {
             grid: {
