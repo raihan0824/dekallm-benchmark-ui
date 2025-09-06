@@ -128,7 +128,7 @@ app.post("/api/benchmarks", async (req, res) => {
     // Encode URL parameters
     const url = encodeURIComponent(benchmarkConfig.url);
     const benchmarkApiUrl = process.env.BENCHMARK_API_URL || 'http://localhost';
-    const benchmarkUrl = `${benchmarkApiUrl}/run-load-test?user=${benchmarkConfig.user}&spawnrate=${benchmarkConfig.spawnrate}&url=${url}&duration=${benchmarkConfig.duration}`;
+    const benchmarkUrl = `${benchmarkApiUrl}/benchmarks/run?user=${benchmarkConfig.user}&spawnrate=${benchmarkConfig.spawnrate}&url=${url}&duration=${benchmarkConfig.duration}`;
     
     // Add model parameter if provided
     const modelParam = benchmarkConfig.model ? `&model=${encodeURIComponent(benchmarkConfig.model)}` : '';
@@ -138,7 +138,8 @@ app.post("/api/benchmarks", async (req, res) => {
       const response = await axios.post(benchmarkUrl + modelParam, '', {
         headers: {
           'accept': 'application/json'
-        }
+        },
+        timeout: 600000, // 10 minute timeout for benchmark tests
       });
       
       // Validate response data

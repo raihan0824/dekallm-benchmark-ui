@@ -20,7 +20,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const benchmarkApiUrl = process.env.BENCHMARK_API_URL || 'http://localhost';
       console.log(`Using Benchmark API URL: ${benchmarkApiUrl}`);
       
-      const benchmarkUrl = `${benchmarkApiUrl}/run-load-test?user=${benchmarkConfig.user}&spawnrate=${benchmarkConfig.spawnrate}&url=${url}&duration=${benchmarkConfig.duration}`;
+      const benchmarkUrl = `${benchmarkApiUrl}/benchmarks/run?user=${benchmarkConfig.user}&spawnrate=${benchmarkConfig.spawnrate}&url=${url}&duration=${benchmarkConfig.duration}`;
       
       // Add model parameter if provided
       const modelParam = benchmarkConfig.model ? `&model=${encodeURIComponent(benchmarkConfig.model)}` : '';
@@ -36,7 +36,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           headers: {
             'accept': 'application/json'
           },
-          timeout: 15000, // 15 second timeout - if API is slow, fail faster
+          timeout: 600000, // 10 minute timeout for benchmark tests
         });
         
         console.log("Received response from benchmark API");
@@ -112,7 +112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/benchmarks", async (req, res) => {
     try {
       const benchmarkApiUrl = process.env.BENCHMARK_API_URL || 'http://localhost';
-      const historyUrl = `${benchmarkApiUrl}/benchmarks`;
+      const historyUrl = `${benchmarkApiUrl}/benchmarks/`;
       
       console.log(`Fetching benchmark history from: ${historyUrl}`);
       
