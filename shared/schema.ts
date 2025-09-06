@@ -58,7 +58,7 @@ export const benchmarkConfigurationSchema = z.object({
   tokenizer: z.string(),
   url: z.string(),
   duration: z.number(),
-  dataset: z.string(),
+  dataset: z.string().optional(),
 });
 
 export const benchmarkResultsSchema = z.object({

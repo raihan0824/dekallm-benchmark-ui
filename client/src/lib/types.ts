@@ -17,7 +17,7 @@ export type TestConfigFormProps = {
 };
 
 export type TestResultsProps = {
-  results: BenchmarkResults | null;
+  results: BenchmarkResponse | null;
   isLoading: boolean;
   error: string | null;
 };
@@ -33,7 +33,7 @@ export type ChartCardProps = {
 };
 
 export type MetricsDisplayProps = {
-  results: BenchmarkResults;
+  results: BenchmarkResponse;
 };
 
 export type TestHistoryProps = {
@@ -44,7 +44,7 @@ export type TestHistoryProps = {
 
 export type AppState = {
   isLoading: boolean;
-  results: BenchmarkResults | null;
+  results: BenchmarkResponse | null;
   error: string | null;
   selectedTestId: number | null;
 };

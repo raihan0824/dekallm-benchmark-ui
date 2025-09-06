@@ -6,7 +6,7 @@ import { TestResultsProps } from "@/lib/types";
 import { MetricsDisplay } from "./metrics-display";
 import { ChartCard } from "./ui/chart-card";
 import { downloadJson, downloadCsv, getMetricChartData, getMetricColors } from "@/lib/utils";
-import { BenchmarkResult } from "@shared/schema";
+import { BenchmarkResponse } from "@shared/schema";
 
 export function TestResults({ results, isLoading, error }: TestResultsProps) {
   const handleExportJson = () => {
@@ -99,7 +99,7 @@ export function TestResults({ results, isLoading, error }: TestResultsProps) {
   }
 
   // We now know results is not null
-  const benchmarkResults: BenchmarkResult = results;
+  const benchmarkResults: BenchmarkResponse = results;
 
   // Results state
   return (
@@ -109,8 +109,8 @@ export function TestResults({ results, isLoading, error }: TestResultsProps) {
 
       {/* Chart displays */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {['time_to_first_token', 'end_to_end_latency', 'inter_token_latency', 'token_speed'].map((metric) => {
-          const { data, labels } = getMetricChartData(benchmarkResults, metric as keyof typeof benchmarkResults.metrics);
+        {benchmarkResults.results?.metrics && ['time_to_first_token', 'end_to_end_latency', 'inter_token_latency', 'token_speed'].map((metric) => {
+          const { data, labels } = getMetricChartData(benchmarkResults.results, metric as keyof typeof benchmarkResults.results.metrics);
           const { color, borderColor } = getMetricColors(metric);
           const metricTitle = metric.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
           
@@ -129,18 +129,20 @@ export function TestResults({ results, isLoading, error }: TestResultsProps) {
       </div>
 
       {/* Throughput chart */}
-      <ChartCard 
-        title="Throughput (tokens/sec)"
-        chartId="throughput-chart"
-        data={[
-          benchmarkResults.metrics.throughput.input_tokens_per_second,
-          benchmarkResults.metrics.throughput.output_tokens_per_second
-        ]}
-        labels={['Input Tokens/s', 'Output Tokens/s']}
-        color="hsl(var(--chart-5))"
-        borderColor="hsl(var(--chart-5))"
-        className="col-span-full"
-      />
+      {benchmarkResults.results?.metrics?.throughput && (
+        <ChartCard 
+          title="Throughput (tokens/sec)"
+          chartId="throughput-chart"
+          data={[
+            benchmarkResults.results.metrics.throughput.input_tokens_per_second || 0,
+            benchmarkResults.results.metrics.throughput.output_tokens_per_second || 0
+          ]}
+          labels={['Input Tokens/s', 'Output Tokens/s']}
+          color="hsl(var(--chart-5))"
+          borderColor="hsl(var(--chart-5))"
+          className="col-span-full"
+        />
+      )}
 
       {/* Export buttons */}
       <div className="flex justify-end">

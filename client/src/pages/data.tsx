@@ -29,7 +29,7 @@ export default function DataPage() {
         {selectedBenchmark && (
           <ErrorBoundary>
             <TestResults
-              results={selectedBenchmark.results}
+              results={selectedBenchmark}
               isLoading={false}
               error={null}
             />

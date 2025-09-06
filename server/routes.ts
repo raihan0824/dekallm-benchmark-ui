@@ -113,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/benchmarks", async (req, res) => {
     try {
       const benchmarkApiUrl = process.env.BENCHMARK_API_URL || 'http://localhost';
-      const historyUrl = `${benchmarkApiUrl}/benchmarks`;
+      const historyUrl = `${benchmarkApiUrl}/benchmarks/?limit=100`;
       
       console.log(`Fetching benchmark history from: ${historyUrl}`);
       
