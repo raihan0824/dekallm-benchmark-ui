@@ -14,7 +14,7 @@ export function ApiStatusBanner() {
     const checkApiStatus = async () => {
       try {
         // Try to fetch benchmark history - if it works, the backend API is responding
-        await apiRequest('GET', '/api/benchmarks');
+        await apiRequest('GET', '/benchmarks');
         // If we get here, API responded, but we should check if there have been any test runs
         // If not, the benchmark API might still be unavailable even if our backend works
         setApiStatus("available");

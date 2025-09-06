@@ -20,11 +20,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const benchmarkApiUrl = process.env.BENCHMARK_API_URL || 'http://localhost';
       console.log(`Using Benchmark API URL: ${benchmarkApiUrl}`);
       
-      const benchmarkUrl = `${benchmarkApiUrl}/benchmarks/run?user=${benchmarkConfig.user}&spawnrate=${benchmarkConfig.spawnrate}&url=${url}&duration=${benchmarkConfig.duration}`;
+      const benchmarkUrl = `${benchmarkApiUrl}/benchmarks/run?user=${benchmarkConfig.user}&spawnrate=${benchmarkConfig.spawnrate}&url=${url}&duration=${benchmarkConfig.duration}&dataset=${encodeURIComponent(benchmarkConfig.dataset)}`;
       
-      // Add model parameter if provided
+      // Add optional parameters
       const modelParam = benchmarkConfig.model ? `&model=${encodeURIComponent(benchmarkConfig.model)}` : '';
-      const fullUrl = benchmarkUrl + modelParam;
+      const tokenizerParam = benchmarkConfig.tokenizer ? `&tokenizer=${encodeURIComponent(benchmarkConfig.tokenizer)}` : '';
+      const fullUrl = benchmarkUrl + modelParam + tokenizerParam;
       
       console.log(`Making request to: ${fullUrl}`);
       
@@ -112,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/benchmarks", async (req, res) => {
     try {
       const benchmarkApiUrl = process.env.BENCHMARK_API_URL || 'http://localhost';
-      const historyUrl = `${benchmarkApiUrl}/benchmarks/`;
+      const historyUrl = `${benchmarkApiUrl}/benchmarks`;
       
       console.log(`Fetching benchmark history from: ${historyUrl}`);
       
@@ -190,6 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
 
   const httpServer = createServer(app);
 
