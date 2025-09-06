@@ -95,32 +95,28 @@ COPY --from=builder /app/production /app
 # Install production dependencies only
 RUN npm ci --only=production
 
-# Create directories for vite shims
-RUN mkdir -p /app/node_modules/vite
-RUN mkdir -p /app/node_modules/@vitejs/plugin-react
-
-# Copy our Vite shims for production mode
-COPY server/shimVite.js /app/node_modules/vite/index.js
-COPY server/shimVitePluginReact.js /app/node_modules/@vitejs/plugin-react/index.js
-
-# Set up environment variable to indicate we're in production/Docker
-ENV IN_DOCKER=true
-
-# Create a modified server/vite.ts that uses our shims in production mode
-RUN echo 'import viteConfig from "../vite.config";' > /app/dist/vite-config-shim.js
-COPY server/shimViteConfig.js /app/vite.config.js
-
 # Check directory structure for debugging
 RUN echo "Docker production environment file structure:"
 RUN find /app -type d | sort
 RUN echo "Checking for index.html files:"
 RUN find /app -name "index.html" | sort
 
-# Copy our production server file (CommonJS version)
-COPY server/prodServer.cjs /app/dist/prodServer.cjs
+# The compiled TypeScript server is already in dist/index.js from the build step
+
+# Fix permissions and ensure required directories exist
+RUN ls -la /app/ && \
+    ls -la /app/dist/ || echo "dist directory doesn't exist yet" && \
+    rm -rf /app/dist/client || echo "no client dir to remove" && \
+    mkdir -p /app/dist/client && \
+    mkdir -p /app/dist/public && \
+    chown -R node:node /app && \
+    chmod -R 755 /app/dist
+
+# Switch to node user for security
+USER node
 
 # Expose the application port
 EXPOSE 5000
 
-# Start the application using our production server
-CMD ["node", "dist/prodServer.cjs"]
+# Start the application using the compiled TypeScript server
+CMD ["npm", "start"]

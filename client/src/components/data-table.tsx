@@ -47,7 +47,9 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
         const response = await apiClient.getBenchmarks(1, 1000); // Get a large number
         setBenchmarks(response.results);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch benchmarks');
+        console.error('Failed to fetch benchmarks:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch benchmarks';
+        setError(`${errorMessage}. Check console for details.`);
         setBenchmarks([]);
       } finally {
         setLoading(false);

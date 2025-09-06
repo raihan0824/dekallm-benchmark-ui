@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DataTable } from "@/components/data-table";
 import { BenchmarkChart } from "@/components/benchmark-chart";
 import { TestResults } from "@/components/test-results";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { BenchmarkResponse } from "@shared/schema";
 
 export default function DataPage() {
@@ -21,14 +22,18 @@ export default function DataPage() {
       </div>
       
       <div className="space-y-6">
-        <DataTable onBenchmarkSelect={handleBenchmarkSelect} />
+        <ErrorBoundary>
+          <DataTable onBenchmarkSelect={handleBenchmarkSelect} />
+        </ErrorBoundary>
         
         {selectedBenchmark && (
-          <TestResults
-            results={selectedBenchmark.results}
-            isLoading={false}
-            error={null}
-          />
+          <ErrorBoundary>
+            <TestResults
+              results={selectedBenchmark.results}
+              isLoading={false}
+              error={null}
+            />
+          </ErrorBoundary>
         )}
       </div>
     </div>

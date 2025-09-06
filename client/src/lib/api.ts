@@ -34,7 +34,7 @@ export class ApiClient {
     });
   }
 
-  async getBenchmarks(page: number = 1, limit: number = 10): Promise<BenchmarkListResponse> {
+  async getBenchmarks(page: number = 1, limit: number = 100): Promise<BenchmarkListResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
