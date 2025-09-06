@@ -22,7 +22,6 @@ export function log(message: string, source = "express") {
 export async function setupVite(app: Express, server: Server) {
   // Import vite dependencies only when needed (development only)
   const { createServer: createViteServer, createLogger } = await import("vite");
-  const viteConfig = (await import("../vite.config.js")).default;
   const { nanoid } = await import("nanoid");
   
   const viteLogger = createLogger();
@@ -34,8 +33,18 @@ export async function setupVite(app: Express, server: Server) {
   };
 
   const vite = await createViteServer({
-    ...viteConfig,
     configFile: false,
+    root: path.resolve(__dirname, "..", "client"),
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "..", "client", "src"),
+        "@shared": path.resolve(__dirname, "..", "shared"),
+      },
+    },
+    build: {
+      outDir: path.resolve(__dirname, "..", "dist", "public"),
+      emptyOutDir: true,
+    },
     customLogger: {
       ...viteLogger,
       error: (msg, options) => {
