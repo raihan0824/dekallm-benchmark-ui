@@ -25,7 +25,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add optional parameters
       const modelParam = benchmarkConfig.model ? `&model=${encodeURIComponent(benchmarkConfig.model)}` : '';
       const tokenizerParam = benchmarkConfig.tokenizer ? `&tokenizer=${encodeURIComponent(benchmarkConfig.tokenizer)}` : '';
-      const fullUrl = benchmarkUrl + modelParam + tokenizerParam;
+      const apiKeyParam = benchmarkConfig.api_key ? `&api_key=${encodeURIComponent(benchmarkConfig.api_key)}` : '';
+      const notesParam = benchmarkConfig.notes ? `&notes=${encodeURIComponent(benchmarkConfig.notes)}` : '';
+      const fullUrl = benchmarkUrl + modelParam + tokenizerParam + apiKeyParam + notesParam;
       
       console.log(`Making request to: ${fullUrl}`);
       

@@ -238,6 +238,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
                 <TableHead>Dataset</TableHead>
                 <TableHead title="Median Token Per Second">Token/s</TableHead>
                 <TableHead title="Median Time To First Token">TTFT</TableHead>
+                <TableHead>Notes</TableHead>
                 <TableHead className="text-right">Created</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
@@ -245,7 +246,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
+                  <TableCell colSpan={9} className="h-24 text-center">
                     <div className="flex items-center justify-center space-x-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Loading benchmarks...</span>
@@ -254,7 +255,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
+                  <TableCell colSpan={9} className="h-24 text-center">
                     <div className="text-red-500">
                       Error: {error}
                     </div>
@@ -262,7 +263,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
                 </TableRow>
               ) : paginatedModels.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
+                  <TableCell colSpan={9} className="h-24 text-center">
                     {searchTerm ? "No models match your search." : "No benchmark data available."}
                   </TableCell>
                 </TableRow>
@@ -322,6 +323,11 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
                       <TableCell title={`Median Time To First Token: ${latestData.results.metrics.time_to_first_token.median.toFixed(2)}ms`}>
                         <span className="font-mono text-sm">
                           {latestData.results.metrics.time_to_first_token.median.toFixed(2)}ms
+                        </span>
+                      </TableCell>
+                      <TableCell title={latestData.results?.configuration?.notes || (latestData as any).notes || undefined}>
+                        <span className="text-sm truncate block max-w-[220px]">
+                          {latestData.results?.configuration?.notes || (latestData as any).notes || "-"}
                         </span>
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">

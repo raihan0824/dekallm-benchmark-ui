@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 export function MetricsDisplay({ results }: MetricsDisplayProps) {
   const metrics = results.results?.metrics;
   const config = results.results?.configuration;
+  const notes = config?.notes || (results as any).notes;
   
   if (!metrics || !config) {
     return (
@@ -113,6 +114,16 @@ export function MetricsDisplay({ results }: MetricsDisplayProps) {
                 </div>
               </div>
             </div>
+            {notes && (
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-4">
+                  <div className="text-sm font-medium text-gray-500">Notes</div>
+                  <div className="mt-1 text-base text-gray-900 break-words whitespace-pre-wrap">
+                    {notes}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* E2E Latency Metrics */}

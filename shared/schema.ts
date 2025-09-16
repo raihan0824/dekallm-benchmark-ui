@@ -26,6 +26,8 @@ export const benchmarkConfigSchema = z.object({
   model: z.string().optional(),
   tokenizer: z.string().optional(),
   dataset: z.string().default("mteb/banking77"),
+  api_key: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 export type BenchmarkConfig = z.infer<typeof benchmarkConfigSchema>;
@@ -59,6 +61,8 @@ export const benchmarkConfigurationSchema = z.object({
   url: z.string(),
   duration: z.number(),
   dataset: z.string().optional(),
+  api_key: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 export const benchmarkResultsSchema = z.object({
@@ -77,6 +81,7 @@ export const benchmarkResponseSchema = z.object({
   model: z.string(),
   tokenizer: z.string(),
   dataset: z.string(),
+  notes: z.string().optional(),
   status: z.string(),
   results: benchmarkResultsSchema,
   createdAt: z.string().transform((val) => new Date(val).toISOString()),

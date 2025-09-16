@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  dekallm-benchmark-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dekallm-benchmark-ui
+    env_file:
+      - .env
+    environment:
+      # Defaults can be overridden by .env
+      - NODE_ENV=production
+      - PORT=${PORT:-5000}
+      - BENCHMARK_API_URL=${BENCHMARK_API_URL:-http://localhost}
+    ports:
+      - "${PORT:-5000}:5000"
+    restart: unless-stopped
+
+  # Optional: If you also run the external benchmark API via compose,
+  # you can define it here and point BENCHMARK_API_URL to http://benchmark-api:8000
+  # benchmark-api:
+  #   image: your-benchmark-api-image:tag
+  #   container_name: benchmark-api
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - SOME_API_ENV=value
+  #   restart: unless-stopped
+
+networks:
+  default:
+    name: dekallm-benchmark
+
