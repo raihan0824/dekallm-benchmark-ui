@@ -18,7 +18,10 @@ export function TestConfigForm({ onSubmit, isLoading }: TestConfigFormProps) {
       spawnrate: 50,  // Reduced default spawn rate
       duration: 5,    // Reduced default duration to avoid timeouts
       model: "",
-      dataset: "mteb/banking77"
+      tokenizer: "",
+      dataset: "mteb/banking77",
+      api_key: "",
+      notes: ""
     }
   });
 
@@ -135,21 +138,78 @@ export function TestConfigForm({ onSubmit, isLoading }: TestConfigFormProps) {
 
             <FormField
               control={form.control}
+              name="tokenizer"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tokenizer (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Tokenizer name (optional)"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="dataset"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Dataset</FormLabel>
                   <FormControl>
                     <Input
+                      placeholder="mteb/banking77"
                       {...field}
-                      value="mteb/banking77"
-                      disabled={true}
-                      className="bg-muted"
+                      disabled={isLoading}
                     />
                   </FormControl>
                   <FormDescription>
-                    Dataset used for benchmarking (read-only)
+                    Dataset used for benchmarking
                   </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="api_key"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>API Key (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="api_key (optional)"
+                      autoComplete="off"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Optional API key for the target model
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Any notes about this run (optional)"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
