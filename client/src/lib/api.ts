@@ -50,6 +50,35 @@ export class ApiClient {
       `${API_BASE_URL}/benchmarks/${id}`
     );
   }
+
+  async updateBenchmarkFavorite(id: number, favorite: boolean): Promise<BenchmarkResponse> {
+    return this.fetchWithErrorHandling<BenchmarkResponse>(
+      `${API_BASE_URL}/benchmarks/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ favorite }),
+      }
+    );
+  }
+
+  async updateBenchmarkNotes(id: number, notes: string): Promise<BenchmarkResponse> {
+    return this.fetchWithErrorHandling<BenchmarkResponse>(
+      `${API_BASE_URL}/benchmarks/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ notes }),
+      }
+    );
+  }
+
+  async deleteBenchmark(id: number): Promise<{ success: boolean } | BenchmarkResponse> {
+    return this.fetchWithErrorHandling<{ success: boolean } | BenchmarkResponse>(
+      `${API_BASE_URL}/benchmarks/${id}`,
+      {
+        method: 'DELETE',
+      }
+    );
+  }
 }
 
 export const apiClient = new ApiClient();

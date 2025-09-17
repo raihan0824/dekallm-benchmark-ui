@@ -183,6 +183,7 @@ export function TestConfigForm({ onSubmit, isLoading }: TestConfigFormProps) {
                   <FormLabel>API Key (Optional)</FormLabel>
                   <FormControl>
                     <Input
+                      type="password"
                       placeholder="api_key (optional)"
                       autoComplete="off"
                       {...field}

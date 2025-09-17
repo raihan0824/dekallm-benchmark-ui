@@ -194,6 +194,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Route to update a benchmark test (for favorites)
+  app.put("/api/benchmarks/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({
+          message: 'Invalid benchmark ID'
+        });
+      }
+      
+      const { favorite, notes } = req.body as { favorite?: boolean; notes?: string };
+      if (favorite === undefined && (notes === undefined || notes === null)) {
+        return res.status(400).json({ message: 'Provide at least one field to update: favorite (boolean) or notes (string)' });
+      }
+      if (favorite !== undefined && typeof favorite !== 'boolean') {
+        return res.status(400).json({ message: 'favorite field must be a boolean' });
+      }
+      
+      const benchmarkApiUrl = process.env.BENCHMARK_API_URL || 'http://localhost';
+      // Backend expects updates as query params
+      const params: string[] = [];
+      if (favorite !== undefined) params.push(`favorite=${encodeURIComponent(favorite)}`);
+      if (typeof notes === 'string') params.push(`notes=${encodeURIComponent(notes)}`);
+      const query = params.length ? `?${params.join('&')}` : '';
+      const benchmarkUrl = `${benchmarkApiUrl}/benchmarks/${id}${query}`;
+      
+      console.log(`Updating benchmark ${id} with: ${params.join(', ')}`);
+      
+      // Send empty body; value is passed via query param
+      const response = await axios.put(benchmarkUrl, '', {
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000, // 10 second timeout
+      });
+      
+      return res.status(200).json(response.data);
+    } catch (error) {
+      console.error('Error updating benchmark:', error);
+      
+      if (axios.isAxiosError(error)) {
+        const statusCode = error.response?.status || 500;
+        let message = error.response?.data?.message || error.message || 'Failed to update benchmark';
+        
+        if (error.response?.status === 404) {
+          return res.status(404).json({
+            message: 'Benchmark test not found'
+          });
+        }
+        
+        return res.status(statusCode).json({
+          message: `Benchmark API Error: ${message}`,
+          error: error.code
+        });
+      }
+      
+      return res.status(500).json({
+        message: 'Failed to update benchmark'
+      });
+    }
+  });
+
+  // Route to delete a benchmark test
+  app.delete("/api/benchmarks/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid benchmark ID' });
+      }
+
+      const benchmarkApiUrl = process.env.BENCHMARK_API_URL || 'http://localhost';
+      const benchmarkUrl = `${benchmarkApiUrl}/benchmarks/${id}`;
+      const response = await axios.delete(benchmarkUrl, {
+        headers: { 'accept': 'application/json' },
+        timeout: 10000,
+      });
+
+      return res.status(200).json(response.data || { success: true });
+    } catch (error) {
+      console.error('Error deleting benchmark:', error);
+      if (axios.isAxiosError(error)) {
+        const statusCode = error.response?.status || 500;
+        let message = error.response?.data?.message || error.message || 'Failed to delete benchmark';
+        return res.status(statusCode).json({ message: `Benchmark API Error: ${message}`, error: error.code });
+      }
+      return res.status(500).json({ message: 'Failed to delete benchmark' });
+    }
+  });
 
   const httpServer = createServer(app);
 

@@ -12,7 +12,7 @@ services:
       # Defaults can be overridden by .env
       - NODE_ENV=production
       - PORT=${PORT:-5000}
-      - BENCHMARK_API_URL=${BENCHMARK_API_URL:-http://localhost}
+      - BENCHMARK_API_URL=${BENCHMARK_API_URL}
     ports:
       - "${PORT:-5000}:5000"
     restart: unless-stopped

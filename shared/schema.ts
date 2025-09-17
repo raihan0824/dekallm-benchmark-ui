@@ -82,6 +82,7 @@ export const benchmarkResponseSchema = z.object({
   tokenizer: z.string(),
   dataset: z.string(),
   notes: z.string().optional(),
+  favorite: z.boolean().optional(),
   status: z.string(),
   results: benchmarkResultsSchema,
   createdAt: z.string().transform((val) => new Date(val).toISOString()),
