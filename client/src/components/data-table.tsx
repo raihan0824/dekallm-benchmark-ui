@@ -18,7 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ExternalLink, Activity, ChevronDown, ChevronRight, Clock, Search, ChevronLeft, ChevronRight as ChevronRightIcon, Loader2 } from "lucide-react";
+import { ExternalLink, Activity, ChevronDown, ChevronRight, Clock, Search, ChevronLeft, ChevronRight as ChevronRightIcon, Loader2, Star, Pencil, Trash } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { apiClient, getGroupedModels } from "@/lib/api";
 import { formatDistance } from "date-fns";
 import { BenchmarkResponse } from "@shared/schema";
@@ -36,6 +39,14 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
   const [benchmarks, setBenchmarks] = useState<BenchmarkResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingFavorites, setUpdatingFavorites] = useState<Set<number>>(new Set());
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
+  // Modal state
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"edit" | "delete" | null>(null);
+  const [activeBenchmark, setActiveBenchmark] = useState<BenchmarkResponse | null>(null);
+  const [editNotesValue, setEditNotesValue] = useState("");
 
   // Fetch benchmarks from API
   useEffect(() => {
@@ -70,11 +81,19 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
     );
   }, [allGroupedModels, searchTerm]);
 
+  // Favorites only
+  const favoritesFiltered = useMemo(() => {
+    if (!showFavoritesOnly) return filteredModels;
+    return filteredModels.filter(({ latestData, allVersions }) =>
+      !!latestData.favorite || allVersions.some(v => !!(v as any).favorite)
+    );
+  }, [filteredModels, showFavoritesOnly]);
+
   // Calculate pagination
-  const totalPages = Math.ceil(filteredModels.length / itemsPerPage);
+  const totalPages = Math.ceil(favoritesFiltered.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedModels = filteredModels.slice(startIndex, endIndex);
+  const paginatedModels = favoritesFiltered.slice(startIndex, endIndex);
 
   // Reset to first page when search changes
   useMemo(() => {
@@ -98,6 +117,77 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
 
   const formatDate = (dateString: string) => {
     return formatDistance(new Date(dateString), new Date(), { addSuffix: true });
+  };
+
+  const handleToggleFavorite = async (benchmarkId: number, currentFavorite: boolean) => {
+    try {
+      setUpdatingFavorites(prev => new Set(prev).add(benchmarkId));
+      
+      const newFavoriteStatus = !currentFavorite;
+      await apiClient.updateBenchmarkFavorite(benchmarkId, newFavoriteStatus);
+      
+      // Update local state
+      setBenchmarks(prev => prev.map(benchmark => 
+        benchmark.id === benchmarkId 
+          ? { ...benchmark, favorite: newFavoriteStatus }
+          : benchmark
+      ));
+    } catch (error) {
+      console.error('Failed to update favorite:', error);
+      // You could add a toast notification here
+    } finally {
+      setUpdatingFavorites(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(benchmarkId);
+        return newSet;
+      });
+    }
+  };
+
+  const openEditNotes = (benchmark: BenchmarkResponse) => {
+    setActiveBenchmark(benchmark);
+    setDialogMode("edit");
+    setEditNotesValue(benchmark.results?.configuration?.notes || (benchmark as any).notes || "");
+    setIsDialogOpen(true);
+  };
+
+  const openDelete = (benchmark: BenchmarkResponse) => {
+    setActiveBenchmark(benchmark);
+    setDialogMode("delete");
+    setIsDialogOpen(true);
+  };
+
+  const confirmDialog = async () => {
+    if (!activeBenchmark || !dialogMode) return;
+    try {
+      if (dialogMode === "edit") {
+        await apiClient.updateBenchmarkNotes(activeBenchmark.id, editNotesValue);
+        setBenchmarks(prev => prev.map(b => b.id === activeBenchmark.id
+          ? { ...b, results: { ...b.results, configuration: { ...b.results.configuration, notes: editNotesValue } }, notes: editNotesValue }
+          : b
+        ));
+      } else if (dialogMode === "delete") {
+        await apiClient.deleteBenchmark(activeBenchmark.id);
+        setBenchmarks(prev => prev.filter(b => b.id !== activeBenchmark.id));
+      }
+    } catch (err) {
+      console.error('Action failed:', err);
+    } finally {
+      setIsDialogOpen(false);
+      setDialogMode(null);
+      setActiveBenchmark(null);
+    }
+  };
+
+  const handleDelete = async (benchmarkId: number) => {
+    const ok = window.confirm("Delete this benchmark? This cannot be undone.");
+    if (!ok) return;
+    try {
+      await apiClient.deleteBenchmark(benchmarkId);
+      setBenchmarks(prev => prev.filter(b => b.id !== benchmarkId));
+    } catch (err) {
+      console.error('Failed to delete benchmark:', err);
+    }
   };
 
 
@@ -159,24 +249,80 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
           {data.results.metrics.time_to_first_token.median.toFixed(2)}ms
         </span>
       </TableCell>
-      <TableCell className="text-right text-muted-foreground">
-        <span className={isNested ? 'text-xs' : 'text-sm'}>
-          {formatDate(data.createdAt)}
+      <TableCell title={data.results?.configuration?.notes || (data as any).notes || undefined}>
+        <span className={`text-sm truncate block max-w-[220px] ${isNested ? 'text-xs text-muted-foreground' : ''}`}>
+          {data.results?.configuration?.notes || (data as any).notes || "-"}
         </span>
       </TableCell>
-      <TableCell>
+      <TableCell className="text-center">
         <Button
           variant="ghost"
           size="sm"
           className="h-8 w-8 p-0"
           onClick={(e) => {
             e.stopPropagation();
-            handleBenchmarkClick(data);
+            handleToggleFavorite(data.id, data.favorite || false);
           }}
+          disabled={updatingFavorites.has(data.id)}
         >
-          <ExternalLink className="h-4 w-4" />
-          <span className="sr-only">View benchmark details</span>
+          <Star 
+            className={`h-4 w-4 ${
+              data.favorite 
+                ? 'text-yellow-500 fill-yellow-500' 
+                : 'text-gray-400 hover:text-yellow-500'
+            }`} 
+          />
         </Button>
+      </TableCell>
+      <TableCell className="text-right text-muted-foreground">
+        <span className={isNested ? 'text-xs' : 'text-sm'}>
+          {formatDate(data.createdAt)}
+        </span>
+      </TableCell>
+      <TableCell>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ExternalLink className="h-4 w-4" />
+              <span className="sr-only">Actions</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2" side="top" align="end" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => openEditNotes(data)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit notes</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-red-600"
+                    onClick={() => openDelete(data)}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Delete</TooltipContent>
+              </Tooltip>
+            </div>
+          </PopoverContent>
+        </Popover>
       </TableCell>
     </TableRow>
   );
@@ -190,8 +336,17 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
             <CardTitle className="text-sm font-medium">Model Benchmarks</CardTitle>
           </div>
           <Badge variant="secondary" className="ml-auto">
-            {filteredModels.length} of {allGroupedModels.length} models
+            {favoritesFiltered.length} of {allGroupedModels.length} models
           </Badge>
+          <Button
+            variant={showFavoritesOnly ? "default" : "outline"}
+            size="sm"
+            className="ml-2"
+            onClick={() => setShowFavoritesOnly(v => !v)}
+          >
+            <Star className={`h-4 w-4 mr-1 ${showFavoritesOnly ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+            Favorites
+          </Button>
         </div>
         
         {/* Search Bar and Items Per Page */}
@@ -228,6 +383,37 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
         </div>
       </CardHeader>
       <CardContent>
+        {/* Central dialog for edit/delete */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {dialogMode === 'edit' ? 'Edit Notes' : 'Confirm Delete'}
+              </DialogTitle>
+              <DialogDescription>
+                {dialogMode === 'edit'
+                  ? 'Update notes for this benchmark.'
+                  : 'This action cannot be undone.'}
+              </DialogDescription>
+            </DialogHeader>
+            {dialogMode === 'edit' && (
+              <div className="mt-2">
+                <Input
+                  value={editNotesValue}
+                  onChange={(e) => setEditNotesValue(e.target.value)}
+                  placeholder="Enter notes"
+                />
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+              <Button variant={dialogMode === 'delete' ? 'destructive' : 'default'} onClick={confirmDialog}>
+                {dialogMode === 'edit' ? 'Save' : 'Delete'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -239,6 +425,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
                 <TableHead title="Median Token Per Second">Token/s</TableHead>
                 <TableHead title="Median Time To First Token">TTFT</TableHead>
                 <TableHead>Notes</TableHead>
+                <TableHead className="w-[50px]">Favorite</TableHead>
                 <TableHead className="text-right">Created</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
@@ -246,7 +433,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
+                  <TableCell colSpan={10} className="h-24 text-center">
                     <div className="flex items-center justify-center space-x-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Loading benchmarks...</span>
@@ -255,7 +442,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
+                  <TableCell colSpan={10} className="h-24 text-center">
                     <div className="text-red-500">
                       Error: {error}
                     </div>
@@ -263,7 +450,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
                 </TableRow>
               ) : paginatedModels.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
+                  <TableCell colSpan={10} className="h-24 text-center">
                     {searchTerm ? "No models match your search." : "No benchmark data available."}
                   </TableCell>
                 </TableRow>
@@ -330,22 +517,73 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
                           {latestData.results?.configuration?.notes || (latestData as any).notes || "-"}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        {formatDate(latestData.createdAt)}
-                      </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <Button
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleBenchmarkClick(latestData);
+                            handleToggleFavorite(latestData.id, latestData.favorite || false);
                           }}
+                          disabled={updatingFavorites.has(latestData.id)}
                         >
-                          <ExternalLink className="h-4 w-4" />
-                          <span className="sr-only">View benchmark details</span>
+                          <Star 
+                            className={`h-4 w-4 ${
+                              latestData.favorite 
+                                ? 'text-yellow-500 fill-yellow-500' 
+                                : 'text-gray-400 hover:text-yellow-500'
+                            }`} 
+                          />
                         </Button>
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {formatDate(latestData.createdAt)}
+                      </TableCell>
+                      <TableCell>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              <span className="sr-only">Actions</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-2" side="top" align="end" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-2">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => openEditNotes(latestData)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Edit notes</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-red-600"
+                                    onClick={() => openDelete(latestData)}
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Delete</TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </TableCell>
                     </TableRow>
                     
