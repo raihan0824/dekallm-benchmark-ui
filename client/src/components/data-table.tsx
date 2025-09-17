@@ -89,11 +89,17 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
     );
   }, [filteredModels, showFavoritesOnly]);
 
+  // Flat list of individual favorite benchmarks (independent of grouping)
+  const favoritesFlat = useMemo(() => benchmarks.filter(b => !!(b as any).favorite), [benchmarks]);
+
   // Calculate pagination
-  const totalPages = Math.ceil(favoritesFiltered.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
+  const totalPages = showFavoritesOnly
+    ? Math.ceil(favoritesFlat.length / itemsPerPage)
+    : Math.ceil(favoritesFiltered.length / itemsPerPage);
   const paginatedModels = favoritesFiltered.slice(startIndex, endIndex);
+  const paginatedFavorites = favoritesFlat.slice(startIndex, endIndex);
 
   // Reset to first page when search changes
   useMemo(() => {
@@ -336,7 +342,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
             <CardTitle className="text-sm font-medium">Model Benchmarks</CardTitle>
           </div>
           <Badge variant="secondary" className="ml-auto">
-            {favoritesFiltered.length} of {allGroupedModels.length} models
+            {showFavoritesOnly ? favoritesFlat.length : favoritesFiltered.length} of {showFavoritesOnly ? favoritesFlat.length : allGroupedModels.length} {showFavoritesOnly ? 'favorites' : 'models'}
           </Badge>
           <Button
             variant={showFavoritesOnly ? "default" : "outline"}
@@ -455,7 +461,15 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedModels.map(({ model, latestData, hasMultipleVersions, allVersions }) => (
+                (showFavoritesOnly
+                  ? paginatedFavorites.map((fav) => ({
+                      model: fav.model,
+                      latestData: fav,
+                      hasMultipleVersions: false,
+                      allVersions: [fav],
+                    }))
+                  : paginatedModels
+                ).map(({ model, latestData, hasMultipleVersions, allVersions }) => (
                   <>
                     <TableRow
                       key={model}
@@ -466,7 +480,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
                     >
                       <TableCell className="font-medium">
                         <div className="flex items-center space-x-2">
-                          {hasMultipleVersions && (
+                          {!showFavoritesOnly && hasMultipleVersions && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -486,7 +500,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
                           <span className="truncate max-w-[230px]" title={model}>
                             {model}
                           </span>
-                          {hasMultipleVersions && (
+                          {!showFavoritesOnly && hasMultipleVersions && (
                             <Badge variant="secondary" className="text-xs">
                               {allVersions.length} versions
                             </Badge>
@@ -587,7 +601,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
                       </TableCell>
                     </TableRow>
                     
-                    {hasMultipleVersions && expandedRows.has(model) && 
+                    {!showFavoritesOnly && hasMultipleVersions && expandedRows.has(model) && 
                       allVersions.slice(1).map((version) => (
                         <ModelRow
                           key={`${model}-${version.id}`}
@@ -605,10 +619,10 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
         </div>
         
         {/* Pagination Controls */}
-        {totalPages > 1 && (
+            {totalPages > 1 && (
           <div className="flex items-center justify-between pt-4">
             <div className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to {Math.min(endIndex, filteredModels.length)} of {filteredModels.length} models
+              Showing {startIndex + 1} to {Math.min(endIndex, showFavoritesOnly ? favoritesFlat.length : favoritesFiltered.length)} of {showFavoritesOnly ? favoritesFlat.length : favoritesFiltered.length} {showFavoritesOnly ? 'favorites' : 'models'}
             </div>
             <div className="flex items-center space-x-2">
               <Button
