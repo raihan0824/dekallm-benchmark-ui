@@ -457,7 +457,7 @@ export function DataTable({ onBenchmarkSelect }: DataTableProps) {
               ) : paginatedModels.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="h-24 text-center">
-                    {searchTerm ? "No models match your search." : "No benchmark data available."}
+                    {searchTerm ? "No models match your search." : "No benchmark data available. "}
                   </TableCell>
                 </TableRow>
               ) : (
